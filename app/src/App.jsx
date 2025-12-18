@@ -24,31 +24,37 @@ import {
     Search,
     BookOpen,
     LogOut,
-    User as UserIcon
+    User as UserIcon,
+    Layout
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import './App.css';
 import Auth from './components/Auth';
+import Dashboard from './components/Dashboard';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 // --- Components ---
 
-const Navbar = ({ scrolled, user, onAuthClick }) => (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+const Navbar = ({ scrolled, user, onAuthClick, isDashboard }) => (
+    <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
         <div className="logo-section" style={{ cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
             <Cpu className="logo-icon" size={28} />
             <span className="logo-text google-font" style={{ fontSize: '1.5rem', fontWeight: 700 }}>Benchmate AI</span>
         </div>
         <div className="nav-links">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#how-it-works" className="nav-link">How it Works</a>
+            {!isDashboard && (
+                <>
+                    <a href="#features" className="nav-link">Features</a>
+                    <a href="#how-it-works" className="nav-link">How it Works</a>
+                </>
+            )}
             {user ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--google-blue-light)', padding: '0.4rem 1rem', borderRadius: '20px', color: 'var(--google-blue)', fontWeight: 600, fontSize: '0.85rem' }}>
                         <UserIcon size={16} />
-                        {user.displayName || user.email.split('@')[0]}
+                        {user.displayName || user.email?.split('@')[0] || 'Scholar'}
                     </div>
                     <button
                         onClick={() => signOut(auth)}
@@ -266,11 +272,17 @@ function App() {
     const [scrolled, setScrolled] = useState(false);
     const [showAuth, setShowAuth] = useState(false);
     const [user, setUser] = useState(null);
+    const [demoUser, setDemoUser] = useState(null);
+
+    const currentUser = user || demoUser;
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            if (currentUser) setShowAuth(false);
+        const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+            setUser(authUser);
+            if (authUser) {
+                setShowAuth(false);
+                setDemoUser(null);
+            }
         });
         return () => unsubscribe();
     }, []);
@@ -282,33 +294,44 @@ function App() {
     }, []);
 
     const handleActionClick = () => {
-        if (!user) {
+        if (!currentUser) {
             setShowAuth(true);
-        } else {
-            // Future logic for transitioning to a dedicated lab page
-            alert("Taking you to the dedicated Lab... (Coming Soon)");
         }
     };
 
+    const handleDemoLogin = (data) => {
+        setDemoUser(data);
+        setShowAuth(false);
+    };
+
+    const handleLogout = () => {
+        signOut(auth);
+        setDemoUser(null);
+        setShowAuth(false);
+    };
+
     if (showAuth) {
-        return <Auth onBack={() => setShowAuth(false)} />;
+        return <Auth onBack={() => setShowAuth(false)} onDemoLogin={handleDemoLogin} />;
+    }
+
+    if (currentUser) {
+        return (
+            <div className="app-container">
+                <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={true} />
+                <Dashboard user={currentUser} onLogout={handleLogout} />
+            </div>
+        );
     }
 
     return (
         <div className="app-container">
-            <Navbar scrolled={scrolled} user={user} onAuthClick={() => setShowAuth(true)} />
-
+            <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={false} />
             <Hero onActionClick={handleActionClick} />
-
             <PainPoints />
-
             <Features />
-
             <HowItWorks />
-
             <Roadmap />
 
-            {/* Footer */}
             <footer className="footer-main">
                 <div className="container">
                     <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '3rem' }}>
@@ -316,22 +339,18 @@ function App() {
                             <span className="footer-logo">Benchmate AI</span>
                             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                                 The world's most student-friendly lecture companion.
-                                Built for hackers, students, and lifelong learners.
                             </p>
                             <div className="impact-quote">
-                                “Benchmate AI doesn’t just convert audio to text. <br /> It converts lectures into confidence.”
+                                “Benchmate AI doesn’t just convert audio to text. It converts lectures into confidence.”
                             </div>
                         </div>
-
                         <div>
                             <h4 style={{ marginBottom: '1.5rem' }}>Resources</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <a href="#" className="nav-link">College Brand Kit</a>
                                 <a href="#" className="nav-link">Privacy Policy</a>
-                                <a href="#" className="nav-link">Hostel Support</a>
                             </div>
                         </div>
-
                         <div>
                             <h4 style={{ marginBottom: '1.5rem' }}>Powered By</h4>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -340,7 +359,6 @@ function App() {
                             </div>
                         </div>
                     </div>
-
                     <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                         © 2025 Benchmate AI • Built for GDG Hackathon
                     </div>

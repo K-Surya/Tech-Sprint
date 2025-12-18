@@ -16,11 +16,13 @@ import {
     ArrowRight,
     Chrome,
     AlertCircle,
-    Cpu
+    Cpu,
+    Loader2,
+    Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const Auth = ({ onBack }) => {
+const Auth = ({ onBack, onDemoLogin }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -34,9 +36,7 @@ const Auth = ({ onBack }) => {
         try {
             await signInWithPopup(auth, googleProvider);
         } catch (err) {
-            setError(err.message.includes('auth/invalid-api-key')
-                ? "Firebase API Key is missing. Please set it up in firebase.js"
-                : err.message);
+            setError("Firebase Configuration required for Google Sign-In. Use demo login for verification.");
         } finally {
             setLoading(false);
         }
@@ -44,18 +44,29 @@ const Auth = ({ onBack }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("[Auth] Submit attempt:", { email, isLogin });
+
+        // Direct Demo Bypass - No Timeout
+        if (isLogin && email.toLowerCase().trim() === 'demo@benchmate.ai' && password === 'demo') {
+            console.log("[Auth] Demo login success!");
+            onDemoLogin({ email: 'demo@benchmate.ai', displayName: 'Demo Student' });
+            return;
+        }
+
+        console.log("[Auth] Attempting Firebase login...");
         setLoading(true);
         setError('');
         try {
             if (isLogin) {
-                await signInWithEmailAndPassword(auth, email, password);
+                await signInWithEmailAndPassword(auth, email.trim(), password);
             } else {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
                 await updateProfile(userCredential.user, { displayName: name });
             }
         } catch (err) {
-            setError(err.message.includes('auth/invalid-api-key')
-                ? "Firebase API Key is missing. Please set it up in firebase.js"
+            console.error("[Auth] Firebase Error:", err.code, err.message);
+            setError(err.message.includes('auth/invalid-api-key') || err.message.includes('auth/network-request-failed')
+                ? "Guest Mode: Firebase keys missing. Try 'demo@benchmate.ai' / 'demo' to enter."
                 : err.message);
         } finally {
             setLoading(false);
@@ -153,6 +164,15 @@ const Auth = ({ onBack }) => {
                     <button className="btn-modern btn-solid" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
                         {loading ? <Loader2 className="spinner" size={20} /> : (isLogin ? 'Sign In' : 'Create Account')}
                         {!loading && <ArrowRight size={20} />}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => onDemoLogin({ email: 'demo@benchmate.ai', displayName: 'Demo Student' })}
+                        className="btn-modern btn-glass"
+                        style={{ width: '100%', justifyContent: 'center', marginTop: '1rem', border: '2px solid var(--google-blue)', color: 'var(--google-blue)', fontWeight: 700 }}
+                    >
+                        <Sparkles size={18} /> Enter as Demo Scholar (Fast Access)
                     </button>
                 </form>
 
