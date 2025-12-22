@@ -81,6 +81,17 @@ export const addFlashcards = async (userId, subjectId, lectureId, flashcards) =>
     await Promise.all(batchPromises);
 };
 
+export const subscribeToFlashcards = (userId, subjectId, lectureId, callback) => {
+    const flashcardsRef = collection(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId, 'flashcards');
+    return onSnapshot(flashcardsRef, (snapshot) => {
+        const flashcards = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(flashcards);
+    });
+};
+
 export const addQuiz = async (userId, subjectId, lectureId, quizData) => {
     const quizzesRef = collection(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId, 'quizzes');
     await addDoc(quizzesRef, {
