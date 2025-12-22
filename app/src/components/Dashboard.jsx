@@ -33,6 +33,7 @@ const Dashboard = ({ user, onLogout }) => {
     const [recordingTime, setRecordingTime] = useState(0);
     const [isCopied, setIsCopied] = useState(false);
     const [showSubjectModal, setShowSubjectModal] = useState(false);
+    const [selectedSubject, setSelectedSubject] = useState(null);
     const [subjects, setSubjects] = useState([
         { name: 'Computer Architecture', notes: 12, color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
         { name: 'Discrete Mathematics', notes: 8, color: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
@@ -102,236 +103,281 @@ Expect a question on "Lazy Propagation" in Segment Trees for range updates.`);
         }
     };
 
+    // Subject Detail View Component
+    const SubjectDetailView = () => (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                <button
+                    onClick={() => setSelectedSubject(null)}
+                    className="btn-modern btn-glass"
+                    style={{ padding: '0.6rem', borderRadius: '50%' }}
+                >
+                    <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
+                </button>
+                <div>
+                    <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Subject Workspace</p>
+                </div>
+            </div>
+
+            <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+                {/* Main Area: Audio Lab & Notes */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    {/* The Audio Lab */}
+                    <motion.div
+                        className="lab-card"
+                        style={{ padding: '2.5rem', borderRadius: '32px', border: 'none', background: 'white', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h2 className="google-font" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Volume2 className="text-gradient" /> Audio Transcription Lab
+                            </h2>
+                            {status !== 'idle' && (
+                                <button className="btn-modern btn-glass" onClick={() => { setStatus('idle'); setTranscription(''); setFile(null); }} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+                                    <RefreshCw size={14} /> New Session
+                                </button>
+                            )}
+                        </div>
+
+                        <AnimatePresence mode="wait">
+                            {status === 'processing' ? (
+                                <motion.div
+                                    key="processing"
+                                    style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                >
+                                    <div className="spinner" style={{ width: 60, height: 60 }}></div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <h3 className="google-font">AI is generating your notes...</h3>
+                                        <p style={{ color: 'var(--text-secondary)' }}>Cleaning background noise and extracting key concepts.</p>
+                                    </div>
+                                </motion.div>
+                            ) : status === 'completed' ? (
+                                <motion.div
+                                    key="completed"
+                                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                >
+                                    <div className="transcription-box" style={{ background: '#f8faff', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid #e1e7f0', whiteSpace: 'pre-line' }}>
+                                        {transcription}
+                                    </div>
+                                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                        <button className="btn-modern btn-glass" onClick={() => { navigator.clipboard.writeText(transcription); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }}>
+                                            {isCopied ? <CheckCircle2 size={18} /> : <Copy size={18} />} {isCopied ? 'Copied' : 'Copy'}
+                                        </button>
+                                        <button className="btn-modern btn-solid">
+                                            <Download size={18} /> Save to Subject
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                    <div
+                                        className="upload-zone"
+                                        style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
+                                        onClick={() => status !== 'recording' && fileInputRef.current.click()}
+                                    >
+                                        <Upload size={32} color="var(--google-blue)" style={{ marginBottom: '1rem' }} />
+                                        <h4 className="google-font">Upload Audio</h4>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>MP3, WAV, M4A</p>
+                                        <input type="file" ref={fileInputRef} hidden accept="audio/*" onChange={(e) => setFile(e.target.files[0])} />
+                                    </div>
+                                    <div
+                                        className={`upload-zone ${status === 'recording' ? 'live' : ''}`}
+                                        style={{ padding: '3rem 1.5rem', background: status === 'recording' ? '#fff5f5' : '#fcfdfe', border: '2px solid transparent' }}
+                                        onClick={() => status === 'idle' ? setStatus('recording') : (status === 'recording' && (setStatus('processing'), simulateTranscription()))}
+                                    >
+                                        {status === 'recording' ? <Square size={32} color="var(--google-red)" fill="var(--google-red)" /> : <Mic size={32} color="var(--google-red)" />}
+                                        <h4 className="google-font">{status === 'recording' ? 'Stop Recording' : 'Live Record'}</h4>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{status === 'recording' ? formatTime(recordingTime) : 'Noise-Aware'}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </AnimatePresence>
+                        {file && status === 'idle' && (
+                            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--google-blue-light)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <FileAudio size={20} color="var(--google-blue)" />
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{file.name}</span>
+                                </div>
+                                <button className="btn-modern btn-solid" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} onClick={() => { setStatus('processing'); simulateTranscription(); }}>
+                                    <Play size={16} /> Process Now
+                                </button>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+
+                {/* Sidebar */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                        <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Notes for {selectedSubject.name}</h3>
+                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                            <BookOpen size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+                            <p>No notes generated yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+
     return (
         <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8faff' }}>
             <div className="container" style={{ padding: '2rem 1rem' }}>
 
-                {/* Dashboard Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
-                    <div>
-                        <motion.h1
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="google-font"
-                            style={{ fontSize: '2.5rem', fontWeight: 700 }}
-                        >
-                            Welcome back, <span className="text-gradient" style={{ background: 'var(--grad-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{user.displayName || 'Scholar'}</span>!
-                        </motion.h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Your lectures are ready for transformation.</p>
+                {/* Dashboard Header - Show only if no subject selected */}
+                {!selectedSubject && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
+                        <div>
+                            <motion.h1
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="google-font"
+                                style={{ fontSize: '2.5rem', fontWeight: 700 }}
+                            >
+                                Welcome back, <span className="text-gradient" style={{ background: 'var(--grad-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{user.displayName || 'Scholar'}</span>!
+                            </motion.h1>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Select a subject to start recording or view notes.</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button className="btn-modern btn-glass" onClick={() => timetableRef.current.click()}>
+                                <Calendar size={20} /> Upload Timetable
+                                <input type="file" ref={timetableRef} hidden />
+                            </button>
+                            <button className="btn-modern btn-solid" onClick={() => setShowSubjectModal(true)}>
+                                <Plus size={20} /> Add Subject
+                            </button>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button className="btn-modern btn-glass" onClick={() => timetableRef.current.click()}>
-                            <Calendar size={20} /> Upload Timetable
-                            <input type="file" ref={timetableRef} hidden />
-                        </button>
-                        <button className="btn-modern btn-solid" onClick={() => setShowSubjectModal(true)}>
-                            <Plus size={20} /> Add Subject
-                        </button>
-                    </div>
-                </div>
+                )}
 
-                <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+                <AnimatePresence mode="wait">
+                    {selectedSubject ? (
+                        <SubjectDetailView key="detail" />
+                    ) : (
+                        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
 
-                    {/* Main Area */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                        {/* The Audio Lab (Post-Login Version) */}
-                        <motion.div
-                            className="lab-card"
-                            style={{ padding: '2.5rem', borderRadius: '32px', border: 'none', background: 'white', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }}
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                <h2 className="google-font" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <Volume2 className="text-gradient" /> Audio Transcription Lab
-                                </h2>
-                                {status !== 'idle' && (
-                                    <button className="btn-modern btn-glass" onClick={() => { setStatus('idle'); setTranscription(''); setFile(null); }} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
-                                        <RefreshCw size={14} /> New Session
-                                    </button>
-                                )}
-                            </div>
-
-                            <AnimatePresence mode="wait">
-                                {status === 'processing' ? (
-                                    <motion.div
-                                        key="processing"
-                                        style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    >
-                                        <div className="spinner" style={{ width: 60, height: 60 }}></div>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <h3 className="google-font">AI is generating your notes...</h3>
-                                            <p style={{ color: 'var(--text-secondary)' }}>Cleaning hostel noise and extracting key concepts.</p>
-                                        </div>
-                                    </motion.div>
-                                ) : status === 'completed' ? (
-                                    <motion.div
-                                        key="completed"
-                                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                    >
-                                        <div className="transcription-box" style={{ background: '#f8faff', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid #e1e7f0', whiteSpace: 'pre-line' }}>
-                                            {transcription}
-                                        </div>
-                                        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                            <button className="btn-modern btn-glass" onClick={() => { navigator.clipboard.writeText(transcription); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }}>
-                                                {isCopied ? <CheckCircle2 size={18} /> : <Copy size={18} />} {isCopied ? 'Copied' : 'Copy'}
-                                            </button>
-                                            <button className="btn-modern btn-solid">
-                                                <Download size={18} /> Save to Subject
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                        <div
-                                            className="upload-zone"
-                                            style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
-                                            onClick={() => status !== 'recording' && fileInputRef.current.click()}
-                                        >
-                                            <Upload size={32} color="var(--google-blue)" style={{ marginBottom: '1rem' }} />
-                                            <h4 className="google-font">Upload Audio</h4>
-                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>MP3, WAV, M4A</p>
-                                            <input type="file" ref={fileInputRef} hidden accept="audio/*" onChange={(e) => setFile(e.target.files[0])} />
-                                        </div>
-                                        <div
-                                            className={`upload-zone ${status === 'recording' ? 'live' : ''}`}
-                                            style={{ padding: '3rem 1.5rem', background: status === 'recording' ? '#fff5f5' : '#fcfdfe', border: '2px solid transparent' }}
-                                            onClick={() => status === 'idle' ? setStatus('recording') : (status === 'recording' && (setStatus('processing'), simulateTranscription()))}
-                                        >
-                                            {status === 'recording' ? <Square size={32} color="var(--google-red)" fill="var(--google-red)" /> : <Mic size={32} color="var(--google-red)" />}
-                                            <h4 className="google-font">{status === 'recording' ? 'Stop Recording' : 'Live Record'}</h4>
-                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{status === 'recording' ? formatTime(recordingTime) : 'Hostel Noise-Aware'}</p>
-                                        </div>
+                            {/* Main Area: Subjects List */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                {/* Subjects Grid */}
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                        <h2 className="google-font" style={{ margin: 0 }}>My Subjects</h2>
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{subjects.length} Subjects Organized</span>
                                     </div>
-                                )}
-                            </AnimatePresence>
-                            {file && status === 'idle' && (
-                                <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--google-blue-light)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        <FileAudio size={20} color="var(--google-blue)" />
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{file.name}</span>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                                        {subjects.map((sub, i) => (
+                                            <motion.div
+                                                key={i}
+                                                className="subject-card"
+                                                style={{
+                                                    background: sub.color,
+                                                    padding: '2rem',
+                                                    borderRadius: '24px',
+                                                    color: 'white',
+                                                    position: 'relative',
+                                                    overflow: 'hidden',
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                                }}
+                                                whileHover={{ y: -5, scale: 1.02 }}
+                                                onClick={() => setSelectedSubject(sub)}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: i * 0.05 }}
+                                            >
+                                                <div style={{ position: 'absolute', right: '-20px', top: '-20px', opacity: 0.1 }}>
+                                                    <BookOpen size={120} />
+                                                </div>
+                                                <div style={{ position: 'relative', zIndex: 2 }}>
+                                                    <div style={{ background: 'rgba(255,255,255,0.2)', width: 'fit-content', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, marginBottom: '1rem' }}>
+                                                        {sub.notes} NOTES
+                                                    </div>
+                                                    <h3 className="google-font" style={{ fontSize: '1.4rem', margin: 0 }}>{sub.name}</h3>
+                                                    <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
+                                                        Open Workspace <ChevronRight size={16} />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                        <motion.div
+                                            className="subject-card-add"
+                                            style={{ border: '2px dashed #cbd5e0', padding: '2rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#718096' }}
+                                            onClick={() => setShowSubjectModal(true)}
+                                            whileHover={{ background: '#edf2f7' }}
+                                        >
+                                            <Plus size={32} style={{ marginBottom: '0.5rem' }} />
+                                            <span style={{ fontWeight: 600 }}>Add New Subject</span>
+                                        </motion.div>
                                     </div>
-                                    <button className="btn-modern btn-solid" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} onClick={() => { setStatus('processing'); simulateTranscription(); }}>
-                                        <Play size={16} /> Process Now
-                                    </button>
                                 </div>
-                            )}
-                        </motion.div>
-
-                        {/* Subjects Grid */}
-                        <div style={{ marginTop: '1rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h2 className="google-font" style={{ margin: 0 }}>My Subjects</h2>
-                                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{subjects.length} Subjects Organized</span>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                                {subjects.map((sub, i) => (
-                                    <motion.div
-                                        key={i}
-                                        className="subject-card"
-                                        style={{
-                                            background: sub.color,
-                                            padding: '2rem',
-                                            borderRadius: '24px',
-                                            color: 'white',
-                                            position: 'relative',
-                                            overflow: 'hidden',
-                                            cursor: 'pointer',
-                                            boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-                                        }}
-                                        whileHover={{ y: -5, scale: 1.02 }}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.05 }}
-                                    >
-                                        <div style={{ position: 'absolute', right: '-20px', top: '-20px', opacity: 0.1 }}>
-                                            <BookOpen size={120} />
-                                        </div>
-                                        <div style={{ position: 'relative', zIndex: 2 }}>
-                                            <div style={{ background: 'rgba(255,255,255,0.2)', width: 'fit-content', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, marginBottom: '1rem' }}>
-                                                {sub.notes} NOTES
+
+                            {/* Sidebar / Stats Area - Only visible on main dashboard */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+                                {/* Quick Stats */}
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Study Progress</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                            <div style={{ background: 'var(--google-blue-light)', color: 'var(--google-blue)', padding: '0.75rem', borderRadius: '12px' }}>
+                                                <Clock size={20} />
                                             </div>
-                                            <h3 className="google-font" style={{ fontSize: '1.4rem', margin: 0 }}>{sub.name}</h3>
-                                            <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
-                                                View Archives <ChevronRight size={16} />
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Listening Time</div>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>24.5 Hours</div>
                                             </div>
                                         </div>
-                                    </motion.div>
-                                ))}
-                                <motion.div
-                                    className="subject-card-add"
-                                    style={{ border: '2px dashed #cbd5e0', padding: '2rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#718096' }}
-                                    onClick={() => setShowSubjectModal(true)}
-                                    whileHover={{ background: '#edf2f7' }}
-                                >
-                                    <Plus size={32} style={{ marginBottom: '0.5rem' }} />
-                                    <span style={{ fontWeight: 600 }}>Add New Subject</span>
-                                </motion.div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Sidebar / Stats Area */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                        {/* Quick Stats */}
-                        <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                            <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Study Progress</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    <div style={{ background: 'var(--google-blue-light)', color: 'var(--google-blue)', padding: '0.75rem', borderRadius: '12px' }}>
-                                        <Clock size={20} />
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Listening Time</div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>24.5 Hours</div>
+                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                            <div style={{ background: 'var(--google-green-light)', color: 'var(--google-green)', padding: '0.75rem', borderRadius: '12px' }}>
+                                                <TrendingUp size={20} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Efficiency Boost</div>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>+42% Result</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    <div style={{ background: 'var(--google-green-light)', color: 'var(--google-green)', padding: '0.75rem', borderRadius: '12px' }}>
-                                        <TrendingUp size={20} />
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Efficiency Boost</div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>+42% Result</div>
+
+                                {/* Exam Timetable Widget */}
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Exam Timetable</h3>
+                                    <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
+                                        <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>No timetable uploaded yet.</p>
+                                        <button className="btn-modern btn-glass" style={{ width: '100%', fontSize: '0.8rem' }} onClick={() => timetableRef.current.click()}>
+                                            Upload PDF / Image
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Exam Timetable Widget */}
-                        <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                            <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Exam Timetable</h3>
-                            <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
-                                <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>No timetable uploaded yet.</p>
-                                <button className="btn-modern btn-glass" style={{ width: '100%', fontSize: '0.8rem' }} onClick={() => timetableRef.current.click()}>
-                                    Upload PDF / Image
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Recent Activity */}
-                        <div style={{ padding: '1rem' }}>
-                            <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Recent Activity</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {[
-                                    { type: 'note', text: 'Introduction to AI Notes generated' },
-                                    { type: 'exam', text: 'Maths Midterm scheduled' },
-                                    { type: 'note', text: 'History of OS cleaned' }
-                                ].map((act, i) => (
-                                    <div key={i} style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--google-blue)', marginTop: 6 }}></div>
-                                        <span>{act.text}</span>
+                                {/* Recent Activity */}
+                                <div style={{ padding: '1rem' }}>
+                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Recent Activity</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {[
+                                            { type: 'note', text: 'Introduction to AI Notes generated' },
+                                            { type: 'exam', text: 'Maths Midterm scheduled' },
+                                            { type: 'note', text: 'History of OS cleaned' }
+                                        ].map((act, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--google-blue)', marginTop: 6 }}></div>
+                                                <span>{act.text}</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                </div>
+
                             </div>
                         </div>
-
-                    </div>
-                </div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Subject Modal */}

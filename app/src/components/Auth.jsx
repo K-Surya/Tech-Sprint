@@ -18,7 +18,8 @@ import {
     AlertCircle,
     Cpu,
     Loader2,
-    Sparkles
+    Sparkles,
+    BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,7 +37,8 @@ const Auth = ({ onBack, onDemoLogin }) => {
         try {
             await signInWithPopup(auth, googleProvider);
         } catch (err) {
-            setError("Firebase Configuration required for Google Sign-In. Use demo login for verification.");
+            console.error("Google Sign-In Error Full:", err);
+            setError(`Google Sign-In Failed: ${err.message} (${err.code})`);
         } finally {
             setLoading(false);
         }
@@ -90,7 +92,7 @@ const Auth = ({ onBack, onDemoLogin }) => {
             >
                 <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
                     <div className="logo-section" style={{ justifyContent: 'center', marginBottom: '1.5rem' }}>
-                        <Cpu className="logo-icon" size={32} />
+                        <BookOpen className="logo-icon" size={32} />
                         <span className="logo-text google-font" style={{ fontSize: '1.8rem', fontWeight: 700 }}>Benchmate AI</span>
                     </div>
                     <h2 className="google-font">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>

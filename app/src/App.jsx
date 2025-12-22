@@ -40,7 +40,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 const Navbar = ({ scrolled, user, onAuthClick, isDashboard }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
         <div className="logo-section" style={{ cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-            <Cpu className="logo-icon" size={28} />
+            <BookOpen className="logo-icon" size={28} />
             <span className="logo-text google-font" style={{ fontSize: '1.5rem', fontWeight: 700 }}>Benchmate AI</span>
         </div>
         <div className="nav-links">
@@ -135,7 +135,7 @@ const Hero = ({ onActionClick }) => (
                     transition={{ delay: 0.8 }}
                 >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-green)' }}></div> Built for hostel life
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-green)' }}></div> Built for campus life
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-blue)' }}></div> Exam-ready notes
@@ -150,7 +150,7 @@ const PainPoints = () => (
     <section className="pain-points section-padding">
         <div className="container">
             <h2 className="section-title">You Attend lectures. You Record them.</h2>
-            <p className="section-subtitle">And then? The "Last-Minute Panic" kicks in. Benchmate AI was built for the hostel life reality.</p>
+            <p className="section-subtitle">And then? The "Last-Minute Panic" kicks in. Benchmate AI was built for the student life reality.</p>
 
             <div className="pain-grid">
                 {[
@@ -209,10 +209,10 @@ const Features = () => (
                 <div className="feature-card" style={{ gridColumn: 'span 2' }}>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <Wifi style={{ color: 'var(--google-blue)' }} />
-                        <h3 style={{ margin: 0 }}>Hostel-Friendly Design</h3>
+                        <h3 style={{ margin: 0 }}>Student-Friendly Design</h3>
                     </div>
                     <p style={{ color: 'var(--text-secondary)' }}>
-                        Lightweight UI and fast load times. Works perfectly on unpredictable hostel Wi-Fi and mobile data.
+                        Lightweight UI and fast load times. Works perfectly on unpredictable campus Wi-Fi and mobile data.
                     </p>
                 </div>
             </div>
