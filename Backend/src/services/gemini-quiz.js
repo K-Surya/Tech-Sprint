@@ -11,31 +11,52 @@ async function generateQuiz(subject, summary) {
     Subject: ${subject}
 
     You are given structured summary notes of a lecture.
-    Using ONLY the information in these notes, generate a quiz with exactly 10 multiple-choice questions (MCQs).
+    Using ONLY the information in these notes, generate a quiz with EXACTLY 10 multiple-choice questions.
 
-    Rules:
-    - Do not introduce concepts not present in the notes
-    - Questions must be exam-oriented (conceptual, definition-based, and comparison-based)
-    - Difficulty: medium
-    - Each question must have 4 options (A, B, C, D)
-    - Clearly indicate the correct answer
-    - Provide a short explanation for the correct answer
+    STRICT RULES (VERY IMPORTANT):
+    - Do NOT include question numbers like Q1, Q2, etc.
+    - Do NOT include A), B), C), D) labels
+    - Output ONLY valid JSON
+    - Do NOT include any text before or after the JSON
+    - Do NOT wrap the response in markdown or code blocks
+
+    Each question must be an object with the following keys:
+    - question (string)
+    - options (object with keys A, B, C, D)
+    - correctAnswer (string: "A" | "B" | "C" | "D")
+    - explanation (string, 1–2 lines)
+
+    The final output must be a single JSON object in this exact shape:
+
+    {
+      "quiz": [
+        {
+          "question": "",
+          "options": {
+            "A": "",
+            "B": "",
+            "C": "",
+            "D": ""
+          },
+          "correctAnswer": "",
+          "explanation": ""
+        }
+      ]
+    }
+
+    Generate EXACTLY 10 question objects inside the quiz array.
+
+    IMPORTANT:
+    Return ONLY the JSON object.
+    Do NOT wrap it inside another object.
+    Do NOT put it inside quotes.
+    Do NOT use markdown.
 
     Summary Notes:
     ${summary}
-
-    Output format (follow strictly):
-
-    Q1. <question>
-    A) <option>
-    B) <option>
-    C) <option>
-    D) <option>
-    Correct Answer: <letter>
-    Explanation: <1-2 lines>
-
-    Continue until Q10.
   `;
+
+
 
   const result = await model.generateContent(prompt);
   return result.response.text();
