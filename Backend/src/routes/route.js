@@ -8,22 +8,14 @@ router.post("/flashcards", async (req, res) => {
     const { processedText } = req.body;
 
     if (!processedText) {
-      return res.status(400).json({
-        error: "processedText is required",
-      });
+      return res.status(400).json({ error: "processedText is required" });
     }
 
     const flashcards = await generateFlashcardsFromText(processedText);
-
-    res.json({
-      status: "success",
-      flashcards,
-    });
+    res.json(flashcards);
   } catch (err) {
-    console.error("Gemini Flashcards error:", err);
-    res.status(500).json({
-      error: "Failed to generate flashcards",
-    });
+    console.error("Flashcard error:", err.message);
+    res.status(500).json({ error: "Failed to generate flashcards" });
   }
 });
 

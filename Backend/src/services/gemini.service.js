@@ -8,9 +8,8 @@ export async function generateFlashcardsFromText(text) {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-flash-latest",
     generationConfig: {
       temperature: 0.5,
       responseMimeType: "application/json"
@@ -18,14 +17,13 @@ export async function generateFlashcardsFromText(text) {
   });
 
   const prompt = `
-Create 5 exam-oriented flashcards.
-
+Generate 5 high-quality, exam-oriented flashcards based on the text provided below.
 Rules:
-- Output ONLY JSON array
-- Each object must have "front" and "back"
+1. Return ONLY a valid JSON array of objects.
+2. Each object must have: "id" (number), "front" (question), "back" (answer).
 
-Text:
-${text}
+Text to process:
+\${text}
 `;
 
   const result = await model.generateContent(prompt);
