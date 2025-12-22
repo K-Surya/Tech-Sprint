@@ -9,7 +9,9 @@ import {
     where,
     onSnapshot,
     serverTimestamp,
-    orderBy
+    orderBy,
+    updateDoc,
+    arrayUnion
 } from 'firebase/firestore';
 
 // --- Users ---
@@ -92,10 +94,21 @@ export const subscribeToFlashcards = (userId, subjectId, lectureId, callback) =>
     });
 };
 
-export const addQuiz = async (userId, subjectId, lectureId, quizData) => {
-    const quizzesRef = collection(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId, 'quizzes');
-    await addDoc(quizzesRef, {
-        ...quizData,
-        createdAt: serverTimestamp()
+// --- Lecture Updates (Quiz & Scores) ---
+
+export const updateLectureQuiz = async (userId, subjectId, lectureId, quizData) => {
+    const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
+    await updateDoc(lectureRef, {
+        quiz: quizData
+    });
+};
+
+export const saveQuizScore = async (userId, subjectId, lectureId, score) => {
+    const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
+    await updateDoc(lectureRef, {
+        scores: arrayUnion({
+            score: score,
+            timestamp: new Date().toISOString()
+        })
     });
 };

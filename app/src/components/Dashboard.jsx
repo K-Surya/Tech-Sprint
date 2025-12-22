@@ -168,6 +168,163 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack }) => {
     );
 };
 
+// --- Quiz Component ---
+const QuizView = ({ userId, subjectId, lectureId, quiz, onBack }) => {
+    const [currentQuestion, setCurrentQuestion] = useState(0);
+    const [score, setScore] = useState(0);
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [showExplanation, setShowExplanation] = useState(false);
+    const [isQuizComplete, setIsQuizComplete] = useState(false);
+
+    const finishQuiz = async (finalScore) => {
+        setIsQuizComplete(true);
+        confetti({
+            particleCount: 300,
+            spread: 120,
+            origin: { y: 0.5 }
+        });
+
+        try {
+            const { saveQuizScore } = await import('../services/db');
+            await saveQuizScore(userId, subjectId, lectureId, finalScore);
+        } catch (e) {
+            console.error("Failed to save score:", e);
+        }
+    };
+
+    const handleOptionSelect = (optionKey) => {
+        if (selectedOption) return; // Prevent multiple selects
+        setSelectedOption(optionKey);
+        setShowExplanation(true);
+
+        const correct = quiz[currentQuestion].correctAnswer === optionKey;
+        if (correct) {
+            setScore(prev => prev + 1);
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#48bb78', '#38a169', '#2f855a']
+            });
+        }
+    };
+
+    const nextQuestion = () => {
+        if (currentQuestion < quiz.length - 1) {
+            setCurrentQuestion(prev => prev + 1);
+            setSelectedOption(null);
+            setShowExplanation(false);
+        } else {
+            finishQuiz(score); // Score is already updated in handleOptionSelect
+        }
+    };
+
+    // Safety check if no quiz data passed
+    if (!quiz || quiz.length === 0) return (
+        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ background: '#fff', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
+                <h3 className="google-font">No Quiz Found</h3>
+                <p style={{ color: 'var(--text-secondary)' }}>Click "Generate Quiz" on the lecture page.</p>
+                <button onClick={onBack} className="btn-modern btn-solid" style={{ marginTop: '1rem' }}>Go Back</button>
+            </div>
+        </div>
+    );
+
+    if (isQuizComplete) {
+        return (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="lab-card" style={{ padding: '3rem', textAlign: 'center', background: 'white', borderRadius: '32px' }}>
+                <h2 className="google-font" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Quiz Completed!</h2>
+                <div style={{ fontSize: '4rem', fontWeight: 700, color: 'var(--google-blue)', marginBottom: '1rem' }}>
+                    {score} / {quiz.length}
+                </div>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                    {score >= 8 ? 'Outstanding! You are an expert.' : score >= 5 ? 'Good job! Review the notes to improve.' : 'Keep practicing!'}
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                    <button onClick={onBack} className="btn-modern btn-glass">Back to Lecture</button>
+                    <button onClick={() => { setCurrentQuestion(0); setScore(0); setSelectedOption(null); setIsQuizComplete(false); }} className="btn-modern btn-solid">Retake Quiz</button>
+                </div>
+            </motion.div>
+        );
+    }
+
+    const question = quiz[currentQuestion];
+
+    return (
+        <div style={{ maxWidth: '800px', margin: '0 auto', height: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ marginRight: '1rem' }}><ArrowLeft size={20} /></button>
+                <div>
+                    <h2 className="google-font" style={{ margin: 0 }}>Question {currentQuestion + 1} <span style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>/ {quiz.length}</span></h2>
+                </div>
+                <div style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--google-blue)' }}>Score: {score}</div>
+            </div>
+
+            <motion.div
+                key={currentQuestion}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lab-card"
+                style={{ padding: '2.5rem', background: 'white', borderRadius: '24px', marginBottom: '2rem' }}
+            >
+                <h3 style={{ fontSize: '1.4rem', marginBottom: '2rem', lineHeight: 1.4 }}>{question.question}</h3>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                    {Object.entries(question.options).map(([key, text]) => {
+                        const isSelected = selectedOption === key;
+                        const isCorrect = question.correctAnswer === key;
+                        let bg = 'white';
+                        let border = '1px solid #e2e8f0';
+
+                        if (selectedOption) {
+                            if (isSelected && isCorrect) { bg = '#f0fff4'; border = '2px solid #48bb78'; }
+                            else if (isSelected && !isCorrect) { bg = '#fff5f5'; border = '2px solid #f56565'; }
+                            else if (isCorrect && showExplanation) { bg = '#f0fff4'; border = '2px solid #48bb78'; }
+                        }
+
+                        return (
+                            <div
+                                key={key}
+                                onClick={() => handleOptionSelect(key)}
+                                style={{
+                                    padding: '1.2rem',
+                                    borderRadius: '16px',
+                                    border: border,
+                                    background: bg,
+                                    cursor: selectedOption ? 'default' : 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem'
+                                }}
+                            >
+                                <span style={{ fontWeight: 700, minWidth: '30px', height: '30px', borderRadius: '50%', background: '#edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{key}</span>
+                                <span style={{ fontSize: '1.05rem' }}>{text}</span>
+                                {selectedOption && isCorrect && <CheckCircle2 size={20} color="#48bb78" style={{ marginLeft: 'auto' }} />}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <AnimatePresence>
+                    {showExplanation && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: '2rem', padding: '1.5rem', background: '#ebf8ff', borderRadius: '16px', color: '#2c5282' }}>
+                            <strong>Explanation:</strong> {question.explanation}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {selectedOption && (
+                    <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button onClick={nextQuestion} className="btn-modern btn-solid" style={{ padding: '0.8rem 2rem' }}>
+                            {currentQuestion < quiz.length - 1 ? 'Next Question' : 'Finish Quiz'}
+                        </button>
+                    </div>
+                )}
+            </motion.div>
+        </div>
+    );
+};
+
 // --- Main Dashboard Component ---
 
 const Dashboard = ({ user, onLogout }) => {
@@ -333,6 +490,95 @@ Expect a question on "Lazy Propagation" in Segment Trees for range updates.`;
         }
     };
 
+    // Keep selectedLecture in sync with real-time updates
+    useEffect(() => {
+        if (selectedLecture) {
+            const updatedLecture = lectures.find(l => l.id === selectedLecture.id);
+            if (updatedLecture) {
+                setSelectedLecture(updatedLecture);
+            }
+        }
+    }, [lectures]);
+
+
+    const generateAndSaveQuiz = async () => {
+        if (!user || !selectedSubject || !selectedLecture) return;
+
+        const generatedQuiz = [
+            {
+                question: "What is the primary purpose of a Segment Tree?",
+                options: { "A": "Sorting arrays", "B": "Performing range queries efficiently", "C": "Storing strings", "D": "Compressing images" },
+                correctAnswer: "B",
+                explanation: "Segment Trees are designed to handle range queries (like sum, min, max) and point updates in logarithmic time."
+            },
+            {
+                question: "What is the time complexity for a range query in a Segment Tree?",
+                options: { "A": "O(1)", "B": "O(N)", "C": "O(log N)", "D": "O(N log N)" },
+                correctAnswer: "C",
+                explanation: "Both updates and range queries take O(log N) time because the tree height is logarithmic."
+            },
+            {
+                question: "How much space does a Segment Tree typically require?",
+                options: { "A": "N", "B": "2N", "C": "4N", "D": "N^2" },
+                correctAnswer: "C",
+                explanation: "A safe upper bound for the array size representing a Segment Tree is 4*N."
+            },
+            {
+                question: "Which technique allows for efficient range updates?",
+                options: { "A": "Lazy Propagation", "B": "Binary Search", "C": "Hashing", "D": "Dynamic Programming" },
+                correctAnswer: "A",
+                explanation: "Lazy Propagation delays updates to children nodes until they are accessed, maintaining O(log N) performance."
+            },
+            {
+                question: "What is a leaf node in a Segment Tree represent?",
+                options: { "A": "A range sum", "B": "A single element of the array", "C": "The root sum", "D": "An update operation" },
+                correctAnswer: "B",
+                explanation: "Leaf nodes in a Segment Tree correspond to individual elements of the original array (interval [i, i])."
+            },
+            {
+                question: "Segment Trees are essentially what type of tree?",
+                options: { "A": "Binary Tree", "B": "B-Tree", "C": "Red-Black Tree", "D": "AVL Tree" },
+                correctAnswer: "A",
+                explanation: "They are full binary trees where each node represents an interval."
+            },
+            {
+                question: "Can Segment Trees handle non-invertible operations like MAX?",
+                options: { "A": "Yes", "B": "No", "C": "Only if sorted", "D": "Only with hashing" },
+                correctAnswer: "A",
+                explanation: "Yes, Segment Trees work well with any associative operation, including MAX, MIN, GCD, and SUM."
+            },
+            {
+                question: "If an array has 8 elements, what is the height of the Segment Tree?",
+                options: { "A": "3", "B": "4", "C": "8", "D": "1" },
+                correctAnswer: "B",
+                explanation: "The height is roughly log2(N). For N=8, log2(8) = 3, but implementation often uses height 4 to cover the range."
+            },
+            {
+                question: "Building a Segment Tree takes what time complexity?",
+                options: { "A": "O(N)", "B": "O(N log N)", "C": "O(log N)", "D": "O(1)" },
+                correctAnswer: "A",
+                explanation: "A Segment Tree can be built in O(N) time using a divide-and-conquer approach."
+            },
+            {
+                question: "In 1-based indexing, if a node is at index 'i', where is its left child?",
+                options: { "A": "2*i", "B": "2*i + 1", "C": "i + 1", "D": "i/2" },
+                correctAnswer: "A",
+                explanation: "Standard heap-like indexing puts the left child at 2*i and the right child at 2*i + 1."
+            }
+        ];
+
+        try {
+            const { updateLectureQuiz } = await import('../services/db');
+            await updateLectureQuiz(user.uid, selectedSubject.id, selectedLecture.id, generatedQuiz);
+
+            confetti({ particleCount: 100, spread: 70, origin: { x: 0.8, y: 0.2 } });
+            setViewMode('quiz');
+        } catch (error) {
+            console.error("Failed to save quiz:", error);
+            alert("Error generating quiz. Check console.");
+        }
+    };
+
     // --- Views ---
 
     // 2. Lecture Detail View
@@ -362,6 +608,13 @@ Expect a question on "Lazy Propagation" in Segment Trees for range updates.`;
                         style={{ background: 'var(--grad-primary)', border: 'none' }}
                     >
                         <BrainCircuit size={18} /> Generate Flashcards
+                    </button>
+                    <button
+                        className="btn-modern btn-solid"
+                        onClick={generateAndSaveQuiz}
+                        style={{ background: '#fff', color: '#1a202c', border: '1px solid #e2e8f0' }}
+                    >
+                        <Sparkles size={18} className="text-gradient" /> Generate Quiz
                     </button>
                 </div>
             </div>
@@ -557,6 +810,15 @@ Expect a question on "Lazy Propagation" in Segment Trees for range updates.`;
                             userId={user.uid}
                             subjectId={selectedSubject.id}
                             lectureId={selectedLecture.id}
+                            onBack={() => setViewMode('lecture')}
+                        />
+                    ) : viewMode === 'quiz' && selectedLecture ? (
+                        <QuizView
+                            key="quiz"
+                            userId={user.uid}
+                            subjectId={selectedSubject.id}
+                            lectureId={selectedLecture.id}
+                            quiz={selectedLecture.quiz}
                             onBack={() => setViewMode('lecture')}
                         />
                     ) : viewMode === 'lecture' && selectedLecture ? (
