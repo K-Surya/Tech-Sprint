@@ -34,17 +34,25 @@ const Dashboard = ({ user, onLogout }) => {
     const [isCopied, setIsCopied] = useState(false);
     const [showSubjectModal, setShowSubjectModal] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState(null);
-    const [subjects, setSubjects] = useState([
-        { name: 'Computer Architecture', notes: 12, color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-        { name: 'Discrete Mathematics', notes: 8, color: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
-        { name: 'Data Structures', notes: 15, color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-        { name: 'Operating Systems', notes: 10, color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-    ]);
+    const [subjects, setSubjects] = useState([]);
     const [newSubject, setNewSubject] = useState('');
 
     const timerRef = useRef(null);
     const fileInputRef = useRef(null);
     const timetableRef = useRef(null);
+
+    // Initial User Setup & Data Fetching
+    useEffect(() => {
+        if (user) {
+            import('../services/db').then(({ initializeUser, subscribeToSubjects }) => {
+                initializeUser(user);
+                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
+                    setSubjects(data);
+                });
+                return () => unsubscribe();
+            });
+        }
+    }, [user]);
 
     useEffect(() => {
         if (status === 'recording') {
@@ -85,21 +93,25 @@ Expect a question on "Lazy Propagation" in Segment Trees for range updates.`);
         }, 3000);
     };
 
-    const addSubject = () => {
-        if (newSubject.trim()) {
+    const addSubject = async () => {
+        if (newSubject.trim() && user) {
             const colors = [
                 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
                 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
                 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
             ];
-            setSubjects([...subjects, {
-                name: newSubject,
-                notes: 0,
-                color: colors[subjects.length % colors.length]
-            }]);
-            setNewSubject('');
-            setShowSubjectModal(false);
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            try {
+                const { addSubject } = await import('../services/db');
+                await addSubject(user.uid, newSubject, color);
+                setNewSubject('');
+                setShowSubjectModal(false);
+            } catch (error) {
+                console.error("Error adding subject:", error);
+                alert("Failed to create subject. Check console.");
+            }
         }
     };
 

@@ -26,6 +26,7 @@ app/dist/
 build/
 app/build/
 
+
 # Local env files
 .env
 .env.local
