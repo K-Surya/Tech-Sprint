@@ -327,12 +327,165 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack }) => {
 
 // --- Main Dashboard Component ---
 
+// Isolated Recorder Component to prevent Dashboard re-renders
+const AudioRecorder = ({ onSave }) => {
+    const [status, setStatus] = useState('idle');
+    const [transcription, setTranscription] = useState('');
+    const [recordingTime, setRecordingTime] = useState(0);
+    const recognitionRef = useRef(null);
+    const timerRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const [isCopied, setIsCopied] = useState(false);
+
+    useEffect(() => {
+        if (status === 'recording') {
+            timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+        } else {
+            clearInterval(timerRef.current);
+            if (status !== 'completed') setRecordingTime(0);
+        }
+        return () => clearInterval(timerRef.current);
+    }, [status]);
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const startRecording = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support speech recognition. Please use Chrome or Edge.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = 0; i < event.results.length; i++) {
+                finalTranscript += event.results[i][0].transcript;
+            }
+            setTranscription(finalTranscript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error", event.error);
+            if (event.error === 'not-allowed') {
+                alert("Microphone access denied. Please allow microphone access.");
+                stopRecording();
+            }
+        };
+
+        recognition.onend = () => {
+            if (status === 'recording' && recognitionRef.current) {
+                try {
+                    recognition.start();
+                } catch (e) { }
+            }
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+        setStatus('recording');
+    };
+
+    const stopRecording = () => {
+        if (recognitionRef.current) {
+            recognitionRef.current.onend = null;
+            recognitionRef.current.stop();
+        }
+        setStatus('completed');
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass"
+            style={{ padding: '2rem', borderRadius: '24px', marginBottom: '3rem', border: '1px solid rgba(255,255,255,0.6)' }}
+        >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 className="heading-font" style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                    <Volume2 className="text-gradient" /> Audio Transcription Lab
+                </h2>
+                {status !== 'idle' && (
+                    <button className="btn-modern btn-glass" onClick={() => { setStatus('idle'); setTranscription(''); }} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+                        <RefreshCw size={14} /> New Session
+                    </button>
+                )}
+            </div>
+
+            <AnimatePresence mode="wait">
+                {status === 'recording' ? (
+                    <motion.div
+                        key="recording"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ textAlign: 'center', padding: '2rem' }}
+                    >
+                        <div className="spinner" style={{ width: 40, height: 40, border: '4px solid #fed7d7', borderTopColor: '#f56565', margin: '0 auto 1.5rem' }}></div>
+                        <h3 className="google-font" style={{ color: '#e53e3e' }}>Listening...</h3>
+                        <p style={{ fontSize: '1.1rem', color: '#2d3748', minHeight: '60px', marginTop: '1rem' }}>
+                            {transcription || "Speak clearly into your microphone..."}
+                        </p>
+                        <button onClick={stopRecording} className="btn-modern btn-solid" style={{ background: '#f56565', color: 'white', marginTop: '1rem' }}>
+                            <Square size={16} fill="white" /> Stop Recording
+                        </button>
+                    </motion.div>
+                ) : status === 'completed' ? (
+                    <motion.div
+                        key="completed"
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    >
+                        <div className="transcription-box" style={{ background: '#f8faff', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid #e1e7f0', whiteSpace: 'pre-line' }}>
+                            {transcription}
+                        </div>
+                        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button
+                                className="btn-modern btn-solid"
+                                style={{ background: 'var(--grad-primary)', padding: '0.8rem 2rem' }}
+                                onClick={async () => { await onSave(transcription); setStatus('idle'); setTranscription(''); }}
+                            >
+                                <Sparkles size={18} /> Generate Notes
+                            </button>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div
+                            className="upload-zone"
+                            style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
+                            onClick={() => fileInputRef.current.click()}
+                        >
+                            <Upload size={32} color="var(--google-blue)" style={{ marginBottom: '1rem' }} />
+                            <h4 className="google-font">Upload Audio</h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>MP3, WAV, M4A</p>
+                            <input type="file" ref={fileInputRef} hidden accept="audio/*" onChange={(e) => { /* Handle file upload if needed later */ }} />
+                        </div>
+                        <div
+                            className={`upload-zone ${status === 'recording' ? 'live' : ''}`}
+                            style={{ padding: '3rem 1.5rem', background: status === 'recording' ? '#fff5f5' : '#fcfdfe', border: '2px solid transparent' }}
+                            onClick={startRecording}
+                        >
+                            <Mic size={32} color="var(--google-red)" />
+                            <h4 className="google-font">Live Record</h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Click to Speak</p>
+                        </div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
+
 const Dashboard = ({ user, onLogout }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
-    const [recordingTime, setRecordingTime] = useState(0);
-    const [isCopied, setIsCopied] = useState(false);
     const [showSubjectModal, setShowSubjectModal] = useState(false);
 
     // Navigation State
@@ -375,31 +528,16 @@ const Dashboard = ({ user, onLogout }) => {
         }
     }, [user, selectedSubject]);
 
-    useEffect(() => {
-        if (status === 'recording') {
-            timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
-        } else {
-            clearInterval(timerRef.current);
-            if (status !== 'completed' && status !== 'processing') setRecordingTime(0);
-        }
-        return () => clearInterval(timerRef.current);
-    }, [status]);
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
+    // Recording logic moved to AudioRecorder component for performance
     const saveLectureToDB = async (transcriptText) => {
         if (!user || !selectedSubject) return;
 
         const lectureData = {
             title: `Lecture ${lectures.length + 1}`,
             transcript: transcriptText,
-            duration: recordingTime,
-            summary: transcriptText.slice(0, 100) + '...', // Simple summary for now
-            type: file ? 'Upload' : 'Recording'
+            duration: 0, // Simplified for now since duration was state-dependent
+            summary: transcriptText.slice(0, 100) + '...',
+            type: 'Recording'
         };
 
         try {
@@ -411,34 +549,6 @@ const Dashboard = ({ user, onLogout }) => {
         }
     };
 
-    const simulateTranscription = () => {
-        setTimeout(async () => {
-            setStatus('completed');
-            const resultText = `SUMMARY: ADVANCED DATA STRUCTURES - SEGMENT TREES
-
-A Segment Tree is a tree data structure used for storing information about intervals, or segments. It allows querying which of the stored segments contain a given point.
-
-KEY CONCEPTS:
-1. Range Queries: Efficiently find sums, mins, or maxes in a range.
-2. Update Efficiency: O(log N) for both updates and queries.
-3. Memory: Space complexity is approximately 4N.
-
-[EXAM ALERT]
-Expect a question on "Lazy Propagation" in Segment Trees for range updates.`;
-
-            setTranscription(resultText);
-
-            // Auto-save to DB
-            await saveLectureToDB(resultText);
-
-            confetti({
-                particleCount: 150,
-                spread: 100,
-                origin: { y: 0.6 },
-                colors: ['#4285F4', '#34A853', '#FBBC05', '#EA4335']
-            });
-        }, 3000);
-    };
 
     const addSubject = async () => {
         if (newSubject.trim() && user) {
@@ -649,77 +759,8 @@ Expect a question on "Lazy Propagation" in Segment Trees for range updates.`;
             <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
                 {/* Main Area: Audio Lab & Notes */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    {/* The Audio Lab */}
-                    <motion.div
-                        className="lab-card"
-                        style={{ padding: '2.5rem', borderRadius: '32px', border: 'none', background: 'white', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                            <h2 className="google-font" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <Volume2 className="text-gradient" /> Audio Transcription Lab
-                            </h2>
-                            {status !== 'idle' && (
-                                <button className="btn-modern btn-glass" onClick={() => { setStatus('idle'); setTranscription(''); setFile(null); }} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
-                                    <RefreshCw size={14} /> New Session
-                                </button>
-                            )}
-                        </div>
-
-                        <AnimatePresence mode="wait">
-                            {status === 'processing' ? (
-                                <motion.div
-                                    key="processing"
-                                    style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                >
-                                    <div className="spinner" style={{ width: 60, height: 60 }}></div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <h3 className="google-font">AI is generating your notes...</h3>
-                                        <p style={{ color: 'var(--text-secondary)' }}>Cleaning background noise and extracting key concepts.</p>
-                                    </div>
-                                </motion.div>
-                            ) : status === 'completed' ? (
-                                <motion.div
-                                    key="completed"
-                                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                >
-                                    <div className="transcription-box" style={{ background: '#f8faff', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid #e1e7f0', whiteSpace: 'pre-line' }}>
-                                        {transcription}
-                                    </div>
-                                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                        <button className="btn-modern btn-glass" onClick={() => { navigator.clipboard.writeText(transcription); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }}>
-                                            {isCopied ? <CheckCircle2 size={18} /> : <Copy size={18} />} {isCopied ? 'Copied' : 'Copy'}
-                                        </button>
-                                        <button className="btn-modern btn-solid" onClick={() => { setStatus('idle'); setTranscription(''); }}>
-                                            <CheckCircle2 size={18} /> Done (Saved)
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                    <div
-                                        className="upload-zone"
-                                        style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
-                                        onClick={() => status !== 'recording' && fileInputRef.current.click()}
-                                    >
-                                        <Upload size={32} color="var(--google-blue)" style={{ marginBottom: '1rem' }} />
-                                        <h4 className="google-font">Upload Audio</h4>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>MP3, WAV, M4A</p>
-                                        <input type="file" ref={fileInputRef} hidden accept="audio/*" onChange={(e) => setFile(e.target.files[0])} />
-                                    </div>
-                                    <div
-                                        className={`upload-zone ${status === 'recording' ? 'live' : ''}`}
-                                        style={{ padding: '3rem 1.5rem', background: status === 'recording' ? '#fff5f5' : '#fcfdfe', border: '2px solid transparent' }}
-                                        onClick={() => status === 'idle' ? setStatus('recording') : (status === 'recording' && (setStatus('processing'), simulateTranscription()))}
-                                    >
-                                        {status === 'recording' ? <Square size={32} color="var(--google-red)" fill="var(--google-red)" /> : <Mic size={32} color="var(--google-red)" />}
-                                        <h4 className="google-font">{status === 'recording' ? 'Stop Recording' : 'Live Record'}</h4>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{status === 'recording' ? formatTime(recordingTime) : 'Noise-Aware'}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </AnimatePresence>
-                    </motion.div>
+                    {/* Isolated Recorder Component */}
+                    <AudioRecorder onSave={saveLectureToDB} />
 
                     {/* Recent Lectures List (New) */}
                     <div>
@@ -730,30 +771,42 @@ Expect a question on "Lazy Propagation" in Segment Trees for range updates.`;
                                     No lectures recorded yet. Start recording above!
                                 </p>
                             )}
-                            {lectures.map((lecture, i) => (
-                                <div
-                                    key={lecture.id}
-                                    onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
-                                    style={{
-                                        background: 'white',
-                                        borderRadius: '20px',
-                                        padding: '1.5rem',
-                                        cursor: 'pointer',
-                                        border: '1px solid #e2e8f0',
-                                        transition: 'all 0.2s ease',
-                                        // Simple gradient effect wrapper could be added here
-                                    }}
-                                    className="lecture-card-hover"
-                                >
-                                    <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'var(--grad-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', marginBottom: '1rem', fontWeight: 700 }}>
-                                        {i + 1}
+                            {lectures.map((lecture, i) => {
+                                const lectureNumber = lectures.length - i;
+                                // Use the exact same gradient as the home page (brand blue)
+                                const bg = 'var(--grad-primary)';
+
+                                return (
+                                    <div
+                                        key={lecture.id}
+                                        onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
+                                        style={{
+                                            background: bg,
+                                            borderRadius: '20px',
+                                            padding: '1.5rem',
+                                            cursor: 'pointer',
+                                            border: 'none',
+                                            transition: 'all 0.2s ease',
+                                            color: 'white',
+                                            boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                        }}
+                                        className="lecture-card-hover"
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700 }}>
+                                                {lectureNumber}
+                                            </div>
+                                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem' }}>
+                                                {i === 0 ? 'Latest' : 'Saved'}
+                                            </div>
+                                        </div>
+                                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 600 }}>{lecture.title}</h4>
+                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
+                                        </div>
                                     </div>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>{lecture.title}</h4>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
-                                    </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 </div>
