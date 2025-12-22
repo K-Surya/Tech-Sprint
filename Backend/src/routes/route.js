@@ -1,6 +1,7 @@
 import express from "express";
 import generateNotes from "../services/gemini-notes.js";
 import generateQuiz from "../services/gemini-quiz.js";
+import generateFlashcards from "../services/gemini-flashcards.js";
 
 const router = express.Router();
 
@@ -31,14 +32,14 @@ router.post("/quiz", async (req, res) => {
 
 router.post("/flashcards", async (req, res) => {
   try {
-    const { processedText } = req.body;
+    const { summary } = req.body;
 
-    if (!processedText) {
+    if (!summary) {
       return res.status(400).json({ error: "processedText is required" });
     }
 
-    const flashcards = await generateFlashcardsFromText(processedText);
-    res.json(flashcards);
+    const flashcards = await generateFlashcards(summary);
+    res.json({flashcards});
   } catch (err) {
     console.error("Flashcard error:", err.message);
     res.status(500).json({ error: "Failed to generate flashcards" });
