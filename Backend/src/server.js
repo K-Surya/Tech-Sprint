@@ -1,5 +1,6 @@
-import dotenv from "dotenv";
-dotenv.config(); // MUST be first
+// import dotenv from "dotenv";
+// dotenv.config(); // MUST be first
+import "dotenv/config";
 
 import app from "./app.js";
 

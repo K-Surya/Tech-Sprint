@@ -3,13 +3,13 @@ import { generateFlashcardsFromText } from "../services/gemini.service.js";
 
 const router = express.Router();
 
-router.post("/generate", async (req, res) => {
+router.post("/flashcards", async (req, res) => {
   try {
     const { processedText } = req.body;
 
     if (!processedText) {
       return res.status(400).json({
-        error: "processedText is required"
+        error: "processedText is required",
       });
     }
 
@@ -17,12 +17,12 @@ router.post("/generate", async (req, res) => {
 
     res.json({
       status: "success",
-      flashcards
+      flashcards,
     });
   } catch (err) {
-    console.error("Gemini error:", err);
+    console.error("Gemini Flashcards error:", err);
     res.status(500).json({
-      error: "Failed to generate flashcards"
+      error: "Failed to generate flashcards",
     });
   }
 });
