@@ -24,7 +24,8 @@ import {
     FileText,
     BrainCircuit,
     ArrowLeft,
-    Sparkles
+    Sparkles,
+    Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -336,6 +337,8 @@ const AudioRecorder = ({ onSave }) => {
     const timerRef = useRef(null);
     const fileInputRef = useRef(null);
     const [isCopied, setIsCopied] = useState(false);
+    const [pasting, setPasting] = useState(false);
+    const [pastedText, setPastedText] = useState("");
 
     useEffect(() => {
         if (status === 'recording') {
@@ -401,6 +404,8 @@ const AudioRecorder = ({ onSave }) => {
         }
         setStatus('completed');
     };
+
+
 
     return (
         <motion.div
@@ -474,18 +479,56 @@ const AudioRecorder = ({ onSave }) => {
                             </button>
                         </div>
                     </motion.div>
+                ) : pasting ? (
+                    <motion.div
+                        key="pasting"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                    >
+                        <h3 className="google-font" style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>Paste Textbook / Note Content</h3>
+                        <textarea
+                            value={pastedText}
+                            onChange={(e) => setPastedText(e.target.value)}
+                            placeholder="Paste your chapter content, summaries, or raw notes here..."
+                            style={{
+                                width: '100%',
+                                minHeight: '200px',
+                                padding: '1.5rem',
+                                borderRadius: '16px',
+                                border: '2px solid #e1e7f0',
+                                background: '#fcfdfe',
+                                fontSize: '1rem',
+                                lineHeight: 1.6,
+                                marginBottom: '1.5rem',
+                                resize: 'vertical',
+                                fontFamily: 'inherit'
+                            }}
+                            autoFocus
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button
+                                className="btn-modern btn-glass"
+                                onClick={() => { setPasting(false); setPastedText(""); }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn-modern btn-solid"
+                                onClick={async () => {
+                                    if (!pastedText.trim()) return;
+                                    await onSave(pastedText);
+                                    setPasting(false);
+                                    setPastedText("");
+                                }}
+                                disabled={!pastedText.trim()}
+                            >
+                                <Sparkles size={18} /> Generate Notes
+                            </button>
+                        </div>
+                    </motion.div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                        <div
-                            className="upload-zone"
-                            style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
-                            onClick={() => fileInputRef.current.click()}
-                        >
-                            <Upload size={32} color="var(--google-blue)" style={{ marginBottom: '1rem' }} />
-                            <h4 className="google-font">Upload Audio</h4>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>MP3, WAV, M4A</p>
-                            <input type="file" ref={fileInputRef} hidden accept="audio/*" onChange={(e) => { /* Handle file upload if needed later */ }} />
-                        </div>
                         <div
                             className={`upload-zone ${status === 'recording' ? 'live' : ''}`}
                             style={{ padding: '3rem 1.5rem', background: status === 'recording' ? '#fff5f5' : '#fcfdfe', border: '2px solid transparent' }}
@@ -494,6 +537,15 @@ const AudioRecorder = ({ onSave }) => {
                             <Mic size={32} color="var(--google-red)" />
                             <h4 className="google-font">Live Record</h4>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Click to Speak</p>
+                        </div>
+                        <div
+                            className="upload-zone"
+                            style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
+                            onClick={() => setPasting(true)}
+                        >
+                            <Clipboard size={32} color="var(--google-green)" style={{ marginBottom: '1rem' }} />
+                            <h4 className="google-font">Paste Text</h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Chapters / Notes</p>
                         </div>
                     </div>
                 )}
