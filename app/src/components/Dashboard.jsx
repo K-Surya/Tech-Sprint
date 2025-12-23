@@ -482,6 +482,155 @@ const AudioRecorder = ({ onSave }) => {
     );
 };
 
+// --- Extracted Views ---
+
+const LectureDetailView = ({
+    selectedLecture,
+    setSelectedLecture,
+    setViewMode,
+    generateAndSaveFlashcards,
+    generateAndSaveQuiz
+}) => (
+    <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        style={{ height: '100%' }}
+    >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <button
+                onClick={() => { setSelectedLecture(null); setViewMode('subject'); }}
+                className="btn-modern btn-glass"
+                style={{ padding: '0.6rem', borderRadius: '50%' }}
+            >
+                <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
+            </button>
+            <div>
+                <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedLecture.title}</h2>
+                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Processed Notes & Study Material</p>
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
+                <button
+                    className="btn-modern btn-solid"
+                    onClick={generateAndSaveFlashcards}
+                    style={{ background: 'var(--grad-primary)', border: 'none' }}
+                >
+                    <BrainCircuit size={18} /> Generate Flashcards
+                </button>
+                <button
+                    className="btn-modern btn-solid"
+                    onClick={generateAndSaveQuiz}
+                    style={{ background: '#fff', color: '#1a202c', border: '1px solid #e2e8f0' }}
+                >
+                    <Sparkles size={18} className="text-gradient" /> Generate Quiz
+                </button>
+            </div>
+        </div>
+
+        <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '600px', whiteSpace: 'pre-line', lineHeight: 1.8 }}>
+            {selectedLecture.transcript}
+        </div>
+    </motion.div>
+);
+
+const SubjectDetailView = ({
+    selectedSubject,
+    setSelectedSubject,
+    setLectures,
+    saveLectureToDB,
+    lectures,
+    setSelectedLecture,
+    setViewMode,
+    timetableRef
+}) => (
+    <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+    >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <button
+                onClick={() => { setSelectedSubject(null); setLectures([]); }}
+                className="btn-modern btn-glass"
+                style={{ padding: '0.6rem', borderRadius: '50%' }}
+            >
+                <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
+            </button>
+            <div>
+                <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
+                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Subject Workspace</p>
+            </div>
+        </div>
+
+        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+            {/* Main Area: Audio Lab & Notes */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {/* Isolated Recorder Component */}
+                <AudioRecorder onSave={saveLectureToDB} />
+
+                {/* Recent Lectures List (New) */}
+                <div>
+                    <h3 className="google-font" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Your Lectures</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                        {lectures.length === 0 && (
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', width: '100%', fontStyle: 'italic' }}>
+                                No lectures recorded yet. Start recording above!
+                            </p>
+                        )}
+                        {lectures.map((lecture, i) => {
+                            const lectureNumber = lectures.length - i;
+                            // Use the exact same gradient as the home page (brand blue)
+                            const bg = 'var(--grad-primary)';
+
+                            return (
+                                <div
+                                    key={lecture.id}
+                                    onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
+                                    style={{
+                                        background: bg,
+                                        borderRadius: '20px',
+                                        padding: '1.5rem',
+                                        cursor: 'pointer',
+                                        border: 'none',
+                                        transition: 'all 0.2s ease',
+                                        color: 'white',
+                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                    }}
+                                    className="lecture-card-hover"
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                        <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700 }}>
+                                            {lectureNumber}
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem' }}>
+                                            {i === 0 ? 'Latest' : 'Saved'}
+                                        </div>
+                                    </div>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 600 }}>{lecture.title}</h4>
+                                    <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* Sidebar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Next Exam</h3>
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+                        <p>No exams scheduled.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </motion.div>
+);
+
 const Dashboard = ({ user, onLogout }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
@@ -689,141 +838,7 @@ const Dashboard = ({ user, onLogout }) => {
         }
     };
 
-    // --- Views ---
 
-    // 2. Lecture Detail View
-    const LectureDetailView = () => (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            style={{ height: '100%' }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                <button
-                    onClick={() => { setSelectedLecture(null); setViewMode('subject'); }}
-                    className="btn-modern btn-glass"
-                    style={{ padding: '0.6rem', borderRadius: '50%' }}
-                >
-                    <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
-                </button>
-                <div>
-                    <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedLecture.title}</h2>
-                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Processed Notes & Study Material</p>
-                </div>
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
-                    <button
-                        className="btn-modern btn-solid"
-                        onClick={generateAndSaveFlashcards}
-                        style={{ background: 'var(--grad-primary)', border: 'none' }}
-                    >
-                        <BrainCircuit size={18} /> Generate Flashcards
-                    </button>
-                    <button
-                        className="btn-modern btn-solid"
-                        onClick={generateAndSaveQuiz}
-                        style={{ background: '#fff', color: '#1a202c', border: '1px solid #e2e8f0' }}
-                    >
-                        <Sparkles size={18} className="text-gradient" /> Generate Quiz
-                    </button>
-                </div>
-            </div>
-
-            <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '600px', whiteSpace: 'pre-line', lineHeight: 1.8 }}>
-                {selectedLecture.transcript}
-            </div>
-        </motion.div>
-    );
-
-    // 1. Subject Detail View
-    const SubjectDetailView = () => (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                <button
-                    onClick={() => { setSelectedSubject(null); setLectures([]); }}
-                    className="btn-modern btn-glass"
-                    style={{ padding: '0.6rem', borderRadius: '50%' }}
-                >
-                    <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
-                </button>
-                <div>
-                    <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
-                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Subject Workspace</p>
-                </div>
-            </div>
-
-            <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-                {/* Main Area: Audio Lab & Notes */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    {/* Isolated Recorder Component */}
-                    <AudioRecorder onSave={saveLectureToDB} />
-
-                    {/* Recent Lectures List (New) */}
-                    <div>
-                        <h3 className="google-font" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Your Lectures</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                            {lectures.length === 0 && (
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', width: '100%', fontStyle: 'italic' }}>
-                                    No lectures recorded yet. Start recording above!
-                                </p>
-                            )}
-                            {lectures.map((lecture, i) => {
-                                const lectureNumber = lectures.length - i;
-                                // Use the exact same gradient as the home page (brand blue)
-                                const bg = 'var(--grad-primary)';
-
-                                return (
-                                    <div
-                                        key={lecture.id}
-                                        onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
-                                        style={{
-                                            background: bg,
-                                            borderRadius: '20px',
-                                            padding: '1.5rem',
-                                            cursor: 'pointer',
-                                            border: 'none',
-                                            transition: 'all 0.2s ease',
-                                            color: 'white',
-                                            boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-                                        }}
-                                        className="lecture-card-hover"
-                                    >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700 }}>
-                                                {lectureNumber}
-                                            </div>
-                                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem' }}>
-                                                {i === 0 ? 'Latest' : 'Saved'}
-                                            </div>
-                                        </div>
-                                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 600 }}>{lecture.title}</h4>
-                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                        <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Next Exam</h3>
-                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                            <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-                            <p>No exams scheduled.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    );
 
     return (
         <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8faff' }}>
@@ -875,9 +890,26 @@ const Dashboard = ({ user, onLogout }) => {
                             onBack={() => setViewMode('lecture')}
                         />
                     ) : viewMode === 'lecture' && selectedLecture ? (
-                        <LectureDetailView key="lecture" />
+                        <LectureDetailView
+                            key="lecture"
+                            selectedLecture={selectedLecture}
+                            setSelectedLecture={setSelectedLecture}
+                            setViewMode={setViewMode}
+                            generateAndSaveFlashcards={generateAndSaveFlashcards}
+                            generateAndSaveQuiz={generateAndSaveQuiz}
+                        />
                     ) : selectedSubject ? (
-                        <SubjectDetailView key="subject" />
+                        <SubjectDetailView
+                            key="subject"
+                            selectedSubject={selectedSubject}
+                            setSelectedSubject={setSelectedSubject}
+                            setLectures={setLectures}
+                            saveLectureToDB={saveLectureToDB}
+                            lectures={lectures}
+                            setSelectedLecture={setSelectedLecture}
+                            setViewMode={setViewMode}
+                            timetableRef={timetableRef}
+                        />
                     ) : (
                         <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
 
