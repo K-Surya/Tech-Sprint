@@ -448,7 +448,27 @@ const AudioRecorder = ({ onSave }) => {
                             <button
                                 className="btn-modern btn-solid"
                                 style={{ background: 'var(--grad-primary)', padding: '0.8rem 2rem' }}
-                                onClick={async () => { await onSave(transcription); setStatus('idle'); setTranscription(''); }}
+                                onClick={async () => {
+                                    try {
+                                        setStatus('processing');
+                                        // 1. Generate Notes via API
+                                        const { generateNotes } = await import('../services/api');
+                                        // Pass "General" as subject for now since we are in a subject context?
+                                        // Actually AudioRecorder doesn't know the subject. 
+                                        // Ideally we should pass subject name prop to AudioRecorder or just use "General".
+                                        // Wait, onSave is passed from Dashboard -> saveLectureToDB
+                                        // Let's keep AudioRecorder emitting raw text, 
+                                        // and move the API call to saveLectureToDB in Dashboard main component.
+                                        // REVERTING this specific change to keep AudioRecorder simple.
+                                        await onSave(transcription);
+                                        setStatus('idle');
+                                        setTranscription('');
+                                    } catch (e) {
+                                        console.error(e);
+                                        alert("Failed to generate notes");
+                                        setStatus('idle');
+                                    }
+                                }}
                             >
                                 <Sparkles size={18} /> Generate Notes
                             </button>
@@ -777,23 +797,31 @@ const Dashboard = ({ user, onLogout }) => {
     }, [user, selectedSubject]);
 
     // Recording logic moved to AudioRecorder component for performance
-    const saveLectureToDB = async (transcriptText) => {
+    const saveLectureToDB = async (rawText) => {
         if (!user || !selectedSubject) return;
 
-        const lectureData = {
-            title: `Lecture ${lectures.length + 1}`,
-            transcript: transcriptText,
-            duration: 0, // Simplified for now since duration was state-dependent
-            summary: transcriptText.slice(0, 100) + '...',
-            type: 'Recording'
-        };
-
         try {
+            // 1. Call Backend API to generate structured notes
+            const { generateNotes } = await import('../services/api');
+            const structuredNotes = await generateNotes(rawText, selectedSubject.name);
+
+            // 2. Save both raw and structured (or just structured)
+            // Storing structuredNotes as the main 'transcript' used for study
+            const lectureData = {
+                title: `Lecture ${lectures.length + 1}`,
+                transcript: structuredNotes, // Using AI generated notes
+                rawTranscript: rawText, // Keeping raw just in case
+                duration: 0,
+                summary: structuredNotes.slice(0, 100) + '...',
+                type: 'Recording'
+            };
+
             const { addLecture } = await import('../services/db');
             await addLecture(user.uid, selectedSubject.id, lectureData);
             console.log("Lecture saved!");
         } catch (error) {
             console.error("Failed to save lecture:", error);
+            alert("Error processing notes. Please try again.");
         }
     };
 
@@ -823,15 +851,17 @@ const Dashboard = ({ user, onLogout }) => {
     const generateAndSaveFlashcards = async () => {
         if (!user || !selectedSubject || !selectedLecture) return;
 
-        // NotebookLM style cards - clean, scholarly look (Simulated AI Generation)
-        const generatedCards = [
-            { question: "What is a Segment Tree?", answer: "A tree data structure used for storing information about intervals, allowing efficient range queries." },
-            { question: "What is the time complexity for updates?", answer: "O(log N) for both updates and range queries." },
-            { question: "What is Lazy Propagation?", answer: "A technique to delay updates to children nodes until they are needed, optimizing range updates to O(log N)." },
-            { question: "What is the space complexity?", answer: "Approximately 4N where N is the number of elements in the array." }
-        ];
-
         try {
+            // Call Backend API
+            const { generateFlashcards } = await import('../services/api');
+            // Use current lecture notes as summary input
+            const generatedCards = await generateFlashcards(selectedLecture.transcript);
+
+            if (!generatedCards || generatedCards.length === 0) {
+                alert("No flashcards could be generated from this content.");
+                return;
+            }
+
             const { addFlashcards } = await import('../services/db');
             await addFlashcards(user.uid, selectedSubject.id, selectedLecture.id, generatedCards);
 
@@ -844,7 +874,7 @@ const Dashboard = ({ user, onLogout }) => {
             setViewMode('flashcards');
         } catch (error) {
             console.error("Failed to save flashcards:", error);
-            alert("Error generating flashcards. Check console.");
+            alert("Error generating flashcards. The backend might be busy.");
         }
     };
 
@@ -862,70 +892,17 @@ const Dashboard = ({ user, onLogout }) => {
     const generateAndSaveQuiz = async () => {
         if (!user || !selectedSubject || !selectedLecture) return;
 
-        const generatedQuiz = [
-            {
-                question: "What is the primary purpose of a Segment Tree?",
-                options: { "A": "Sorting arrays", "B": "Performing range queries efficiently", "C": "Storing strings", "D": "Compressing images" },
-                correctAnswer: "B",
-                explanation: "Segment Trees are designed to handle range queries (like sum, min, max) and point updates in logarithmic time."
-            },
-            {
-                question: "What is the time complexity for a range query in a Segment Tree?",
-                options: { "A": "O(1)", "B": "O(N)", "C": "O(log N)", "D": "O(N log N)" },
-                correctAnswer: "C",
-                explanation: "Both updates and range queries take O(log N) time because the tree height is logarithmic."
-            },
-            {
-                question: "How much space does a Segment Tree typically require?",
-                options: { "A": "N", "B": "2N", "C": "4N", "D": "N^2" },
-                correctAnswer: "C",
-                explanation: "A safe upper bound for the array size representing a Segment Tree is 4*N."
-            },
-            {
-                question: "Which technique allows for efficient range updates?",
-                options: { "A": "Lazy Propagation", "B": "Binary Search", "C": "Hashing", "D": "Dynamic Programming" },
-                correctAnswer: "A",
-                explanation: "Lazy Propagation delays updates to children nodes until they are accessed, maintaining O(log N) performance."
-            },
-            {
-                question: "What is a leaf node in a Segment Tree represent?",
-                options: { "A": "A range sum", "B": "A single element of the array", "C": "The root sum", "D": "An update operation" },
-                correctAnswer: "B",
-                explanation: "Leaf nodes in a Segment Tree correspond to individual elements of the original array (interval [i, i])."
-            },
-            {
-                question: "Segment Trees are essentially what type of tree?",
-                options: { "A": "Binary Tree", "B": "B-Tree", "C": "Red-Black Tree", "D": "AVL Tree" },
-                correctAnswer: "A",
-                explanation: "They are full binary trees where each node represents an interval."
-            },
-            {
-                question: "Can Segment Trees handle non-invertible operations like MAX?",
-                options: { "A": "Yes", "B": "No", "C": "Only if sorted", "D": "Only with hashing" },
-                correctAnswer: "A",
-                explanation: "Yes, Segment Trees work well with any associative operation, including MAX, MIN, GCD, and SUM."
-            },
-            {
-                question: "If an array has 8 elements, what is the height of the Segment Tree?",
-                options: { "A": "3", "B": "4", "C": "8", "D": "1" },
-                correctAnswer: "B",
-                explanation: "The height is roughly log2(N). For N=8, log2(8) = 3, but implementation often uses height 4 to cover the range."
-            },
-            {
-                question: "Building a Segment Tree takes what time complexity?",
-                options: { "A": "O(N)", "B": "O(N log N)", "C": "O(log N)", "D": "O(1)" },
-                correctAnswer: "A",
-                explanation: "A Segment Tree can be built in O(N) time using a divide-and-conquer approach."
-            },
-            {
-                question: "In 1-based indexing, if a node is at index 'i', where is its left child?",
-                options: { "A": "2*i", "B": "2*i + 1", "C": "i + 1", "D": "i/2" },
-                correctAnswer: "A",
-                explanation: "Standard heap-like indexing puts the left child at 2*i and the right child at 2*i + 1."
-            }
-        ];
-
         try {
+            // Call Backend API
+            const { generateQuiz } = await import('../services/api');
+            // Use current lecture notes and subject name
+            const generatedQuiz = await generateQuiz(selectedLecture.transcript, selectedSubject.name);
+
+            if (!generatedQuiz || generatedQuiz.length === 0) {
+                alert("No quiz could be generated. Try adding more notes.");
+                return;
+            }
+
             const { updateLectureQuiz } = await import('../services/db');
             await updateLectureQuiz(user.uid, selectedSubject.id, selectedLecture.id, generatedQuiz);
 
@@ -933,7 +910,7 @@ const Dashboard = ({ user, onLogout }) => {
             setViewMode('quiz');
         } catch (error) {
             console.error("Failed to save quiz:", error);
-            alert("Error generating quiz. Check console.");
+            alert("Error generating quiz. Please check backend connection.");
         }
     };
 
