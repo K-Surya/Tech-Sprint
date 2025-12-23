@@ -30,7 +30,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
 // --- Flashcard Component ---
-const FlashcardDeck = ({ userId, subjectId, lectureId, onBack }) => {
+// --- Flashcard Component --- //
+const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => {
     const [cards, setCards] = useState([]);
     const [currentCard, setCurrentCard] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
@@ -80,8 +81,7 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack }) => {
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ background: '#fff', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
                     <h3 className="google-font">No Flashcards Found</h3>
-                    <p style={{ color: 'var(--text-secondary)' }}>Click "Generate" on the lecture page to create some.</p>
-                    <button onClick={onBack} className="btn-modern btn-solid" style={{ marginTop: '1rem' }}>Go Back</button>
+                    <p style={{ color: 'var(--text-secondary)' }}>Click "Generate" above to create some.</p>
                 </div>
             </div>
         );
@@ -169,7 +169,8 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack }) => {
 };
 
 // --- Quiz Component ---
-const QuizView = ({ userId, subjectId, lectureId, quiz, onBack }) => {
+// --- Quiz Component --- //
+const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) => {
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [score, setScore] = useState(0);
     const [selectedOption, setSelectedOption] = useState(null);
@@ -224,8 +225,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack }) => {
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ background: '#fff', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
                 <h3 className="google-font">No Quiz Found</h3>
-                <p style={{ color: 'var(--text-secondary)' }}>Click "Generate Quiz" on the lecture page.</p>
-                <button onClick={onBack} className="btn-modern btn-solid" style={{ marginTop: '1rem' }}>Go Back</button>
+                <p style={{ color: 'var(--text-secondary)' }}>Click "Generate" above to create one.</p>
             </div>
         </div>
     );
@@ -489,49 +489,148 @@ const LectureDetailView = ({
     setSelectedLecture,
     setViewMode,
     generateAndSaveFlashcards,
-    generateAndSaveQuiz
-}) => (
-    <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        style={{ height: '100%' }}
-    >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-            <button
-                onClick={() => { setSelectedLecture(null); setViewMode('subject'); }}
-                className="btn-modern btn-glass"
-                style={{ padding: '0.6rem', borderRadius: '50%' }}
-            >
-                <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
-            </button>
-            <div>
-                <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedLecture.title}</h2>
-                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Processed Notes & Study Material</p>
-            </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
-                <button
-                    className="btn-modern btn-solid"
-                    onClick={generateAndSaveFlashcards}
-                    style={{ background: 'var(--grad-primary)', border: 'none' }}
-                >
-                    <BrainCircuit size={18} /> Generate Flashcards
-                </button>
-                <button
-                    className="btn-modern btn-solid"
-                    onClick={generateAndSaveQuiz}
-                    style={{ background: '#fff', color: '#1a202c', border: '1px solid #e2e8f0' }}
-                >
-                    <Sparkles size={18} className="text-gradient" /> Generate Quiz
-                </button>
-            </div>
-        </div>
+    generateAndSaveQuiz,
+    userId,
+    subjectId
+}) => {
+    const [activeTab, setActiveTab] = useState('notes'); // 'notes', 'flashcards', 'quiz'
 
-        <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '600px', whiteSpace: 'pre-line', lineHeight: 1.8 }}>
-            {selectedLecture.transcript}
-        </div>
-    </motion.div>
-);
+    const tabs = [
+        { id: 'notes', label: 'Lecture Notes', icon: FileText, visible: true },
+        { id: 'flashcards', label: 'Flashcards', icon: BrainCircuit, visible: !!selectedLecture.hasFlashcards },
+        { id: 'quiz', label: 'Quiz', icon: Sparkles, visible: !!selectedLecture.quiz && selectedLecture.quiz.length > 0 }
+    ];
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                <button
+                    onClick={() => { setSelectedLecture(null); setViewMode('subject'); }}
+                    className="btn-modern btn-glass"
+                    style={{ padding: '0.6rem', borderRadius: '50%' }}
+                >
+                    <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
+                </button>
+                <div>
+                    <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedLecture.title}</h2>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Processed Notes & Study Material</p>
+                </div>
+
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
+                    {!selectedLecture.hasFlashcards && (
+                        <button
+                            className="btn-modern btn-solid"
+                            onClick={async () => {
+                                await generateAndSaveFlashcards();
+                                setActiveTab('flashcards');
+                            }}
+                            style={{ background: 'var(--grad-primary)', border: 'none' }}
+                        >
+                            <BrainCircuit size={18} /> Generate Flashcards
+                        </button>
+                    )}
+
+                    {(!selectedLecture.quiz || selectedLecture.quiz.length === 0) && (
+                        <button
+                            className="btn-modern btn-solid"
+                            onClick={async () => {
+                                await generateAndSaveQuiz();
+                                setActiveTab('quiz');
+                            }}
+                            style={{ background: '#fff', color: '#1a202c', border: '1px solid #e2e8f0' }}
+                        >
+                            <Sparkles size={18} className="text-gradient" /> Generate Quiz
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', flex: 1, minHeight: 0 }}>
+                {/* Inner Sidebar */}
+                <div style={{
+                    background: 'white',
+                    borderRadius: '24px',
+                    padding: '1.5rem',
+                    height: 'fit-content',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                }}>
+                    <h3 className="google-font" style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Study Tools</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {tabs.filter(t => t.visible).map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    padding: '1rem',
+                                    borderRadius: '16px',
+                                    border: 'none',
+                                    background: activeTab === tab.id ? 'var(--google-blue-light)' : 'transparent',
+                                    color: activeTab === tab.id ? 'var(--google-blue)' : 'var(--text-secondary)',
+                                    fontWeight: activeTab === tab.id ? 700 : 500,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    textAlign: 'left'
+                                }}
+                            >
+                                <tab.icon size={20} />
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Content Area */}
+                <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            style={{ height: '100%', flex: 1 }}
+                        >
+                            {activeTab === 'notes' && (
+                                <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '100%', whiteSpace: 'pre-line', lineHeight: 1.8 }}>
+                                    {selectedLecture.transcript}
+                                </div>
+                            )}
+
+                            {activeTab === 'flashcards' && (
+                                <FlashcardDeck
+                                    userId={userId}
+                                    subjectId={subjectId}
+                                    lectureId={selectedLecture.id}
+                                    onBack={() => setActiveTab('notes')}
+                                    onGenerate={generateAndSaveFlashcards}
+                                />
+                            )}
+
+                            {activeTab === 'quiz' && (
+                                <QuizView
+                                    userId={userId}
+                                    subjectId={subjectId}
+                                    lectureId={selectedLecture.id}
+                                    quiz={selectedLecture.quiz}
+                                    onBack={() => setActiveTab('notes')}
+                                    onGenerate={generateAndSaveQuiz}
+                                />
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
 
 const SubjectDetailView = ({
     selectedSubject,
@@ -897,6 +996,8 @@ const Dashboard = ({ user, onLogout }) => {
                             setViewMode={setViewMode}
                             generateAndSaveFlashcards={generateAndSaveFlashcards}
                             generateAndSaveQuiz={generateAndSaveQuiz}
+                            userId={user.uid}
+                            subjectId={selectedSubject.id}
                         />
                     ) : selectedSubject ? (
                         <SubjectDetailView

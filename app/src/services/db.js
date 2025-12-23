@@ -81,6 +81,10 @@ export const addFlashcards = async (userId, subjectId, lectureId, flashcards) =>
     // For simplicity efficiently:
     const batchPromises = flashcards.map(card => addDoc(flashcardsRef, card));
     await Promise.all(batchPromises);
+
+    // Update parent lecture document to indicate flashcards exist
+    const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
+    await updateDoc(lectureRef, { hasFlashcards: true });
 };
 
 export const subscribeToFlashcards = (userId, subjectId, lectureId, callback) => {

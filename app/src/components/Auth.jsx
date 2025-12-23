@@ -18,12 +18,11 @@ import {
     AlertCircle,
     Cpu,
     Loader2,
-    Sparkles,
     BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const Auth = ({ onBack, onDemoLogin }) => {
+const Auth = ({ onBack }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -48,12 +47,7 @@ const Auth = ({ onBack, onDemoLogin }) => {
         e.preventDefault();
         console.log("[Auth] Submit attempt:", { email, isLogin });
 
-        // Direct Demo Bypass - No Timeout
-        if (isLogin && email.toLowerCase().trim() === 'demo@benchmate.ai' && password === 'demo') {
-            console.log("[Auth] Demo login success!");
-            onDemoLogin({ email: 'demo@benchmate.ai', displayName: 'Demo Student' });
-            return;
-        }
+
 
         console.log("[Auth] Attempting Firebase login...");
         setLoading(true);
@@ -68,7 +62,7 @@ const Auth = ({ onBack, onDemoLogin }) => {
         } catch (err) {
             console.error("[Auth] Firebase Error:", err.code, err.message);
             setError(err.message.includes('auth/invalid-api-key') || err.message.includes('auth/network-request-failed')
-                ? "Guest Mode: Firebase keys missing. Try 'demo@benchmate.ai' / 'demo' to enter."
+                ? "Authentication Service Unavailable. Please check your connection."
                 : err.message);
         } finally {
             setLoading(false);
@@ -168,14 +162,7 @@ const Auth = ({ onBack, onDemoLogin }) => {
                         {!loading && <ArrowRight size={20} />}
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={() => onDemoLogin({ email: 'demo@benchmate.ai', displayName: 'Demo Student' })}
-                        className="btn-modern btn-glass"
-                        style={{ width: '100%', justifyContent: 'center', marginTop: '1rem', border: '2px solid var(--google-blue)', color: 'var(--google-blue)', fontWeight: 700 }}
-                    >
-                        <Sparkles size={18} /> Enter as Demo Scholar (Fast Access)
-                    </button>
+
                 </form>
 
                 <div style={{ margin: '2rem 0', display: 'flex', alignItems: 'center', gap: '1rem' }}>
