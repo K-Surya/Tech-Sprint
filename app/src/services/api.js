@@ -11,6 +11,9 @@ export const generateNotes = async (transcript, subject) => {
         if (!response.ok) throw new Error("Failed to generate notes");
 
         const data = await response.json();
+        if (!data.notes) {
+            console.error("API returned no notes. Full response:", data);
+        }
         return data.notes;
     } catch (error) {
         console.error("API generateNotes error:", error);

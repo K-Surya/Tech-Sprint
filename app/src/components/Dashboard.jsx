@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // --- Flashcard Component ---
 // --- Flashcard Component --- //
@@ -471,13 +473,23 @@ const AudioRecorder = ({ onSave }) => {
                                     } catch (e) {
                                         console.error(e);
                                         alert("Failed to generate notes");
-                                        setStatus('idle');
+                                        setStatus('completed'); // Keep text so user can try again
                                     }
                                 }}
                             >
                                 <Sparkles size={18} /> Generate Notes
                             </button>
                         </div>
+                    </motion.div>
+                ) : status === 'processing' ? (
+                    <motion.div
+                        key="processing"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        style={{ textAlign: 'center', padding: '3rem' }}
+                    >
+                        <Loader2 className="spinner" size={48} color="var(--google-blue)" style={{ marginBottom: '1.5rem' }} />
+                        <h3 className="google-font">Generating Magic Notes...</h3>
+                        <p style={{ color: 'var(--text-secondary)' }}>AI is structuring your content, please wait.</p>
                     </motion.div>
                 ) : pasting ? (
                     <motion.div
@@ -517,9 +529,27 @@ const AudioRecorder = ({ onSave }) => {
                                 className="btn-modern btn-solid"
                                 onClick={async () => {
                                     if (!pastedText.trim()) return;
-                                    await onSave(pastedText);
-                                    setPasting(false);
-                                    setPastedText("");
+                                    try {
+                                        setStatus('processing');
+                                        await onSave(pastedText);
+                                        // On success, reset (parent handles data)
+                                        setStatus('idle');
+                                        setPasting(false);
+                                        setPastedText("");
+                                    } catch (e) {
+                                        console.error(e);
+                                        // Error handled by parent alert
+                                        // Stay in pasting mode to let user retry? 
+                                        // Actually if we set status processing, we lost the pasting view state. 
+                                        // Better to setStatus('processing') then if error revert to pasting?
+                                        // Complex state management locally.
+                                        // Simplification: For paste, just show loading on the button, don't change main status.
+                                        // But for consistency let's use the full screen loader for now.
+
+                                        // Revert to pasting state on error
+                                        setStatus('idle'); // Need to differentiate "idle-pasting" vs "idle-home"
+                                        setPasting(true);
+                                    }
                                 }}
                                 disabled={!pastedText.trim()}
                             >
@@ -548,9 +578,10 @@ const AudioRecorder = ({ onSave }) => {
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Chapters / Notes</p>
                         </div>
                     </div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+                )
+                }
+            </AnimatePresence >
+        </motion.div >
     );
 };
 
@@ -671,8 +702,12 @@ const LectureDetailView = ({
                             style={{ height: '100%', flex: 1 }}
                         >
                             {activeTab === 'notes' && (
-                                <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '100%', whiteSpace: 'pre-line', lineHeight: 1.8 }}>
-                                    {selectedLecture.transcript}
+                                <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '100%' }}>
+                                    <div className="markdown-content">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {selectedLecture.transcript}
+                                        </ReactMarkdown>
+                                    </div>
                                 </div>
                             )}
 
@@ -856,6 +891,7 @@ const Dashboard = ({ user, onLogout }) => {
             // 1. Call Backend API to generate structured notes
             const { generateNotes } = await import('../services/api');
             const structuredNotes = await generateNotes(rawText, selectedSubject.name);
+            if (!structuredNotes) throw new Error("No notes returned from AI");
 
             // 2. Save both raw and structured (or just structured)
             // Storing structuredNotes as the main 'transcript' used for study
@@ -864,7 +900,7 @@ const Dashboard = ({ user, onLogout }) => {
                 transcript: structuredNotes, // Using AI generated notes
                 rawTranscript: rawText, // Keeping raw just in case
                 duration: 0,
-                summary: structuredNotes.slice(0, 100) + '...',
+                summary: structuredNotes.replace ? structuredNotes.slice(0, 100) + '...' : 'No summary',
                 type: 'Recording'
             };
 
@@ -873,7 +909,8 @@ const Dashboard = ({ user, onLogout }) => {
             console.log("Lecture saved!");
         } catch (error) {
             console.error("Failed to save lecture:", error);
-            alert("Error processing notes. Please try again.");
+            alert("Error processing notes: " + (error.message || "Unknown error"));
+            throw error; // Re-throw so AudioRecorder knows it failed
         }
     };
 
@@ -1077,7 +1114,7 @@ const Dashboard = ({ user, onLogout }) => {
                                                 </div>
                                                 <div style={{ position: 'relative', zIndex: 2 }}>
                                                     <div style={{ background: 'rgba(255,255,255,0.2)', width: 'fit-content', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, marginBottom: '1rem' }}>
-                                                        {sub.notes || 0} NOTES
+                                                        {sub.noteCount || 0} NOTES
                                                     </div>
                                                     <h3 className="google-font" style={{ fontSize: '1.4rem', margin: 0 }}>{sub.name}</h3>
                                                     <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>

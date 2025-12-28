@@ -56,5 +56,3 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 app/src/firebase.js
-node_modules
-.env

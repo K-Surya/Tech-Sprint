@@ -11,7 +11,9 @@ import {
     serverTimestamp,
     orderBy,
     updateDoc,
-    arrayUnion
+
+    arrayUnion,
+    increment
 } from 'firebase/firestore';
 
 // --- Users ---
@@ -55,6 +57,13 @@ export const addLecture = async (userId, subjectId, lectureData) => {
         ...lectureData,
         createdAt: serverTimestamp()
     });
+
+    // Update parent subject note count
+    const subjectRef = doc(db, 'users', userId, 'subjects', subjectId);
+    await updateDoc(subjectRef, {
+        noteCount: increment(1)
+    });
+
     return docRef.id;
 };
 
