@@ -41,13 +41,13 @@ export const generateQuiz = async (lectureContent, subject) => {
     }
 };
 
-export const generateFlashcards = async (lectureContent) => {
+export const generateFlashcards = async (lectureContent, subject) => {
     try {
-        // API expects 'summary'
+        // API expects 'summary' and 'subject'
         const response = await fetch(`${BASE_URL}/flashcards`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ summary: lectureContent }),
+            body: JSON.stringify({ summary: lectureContent, subject }),
         });
 
         if (!response.ok) throw new Error("Failed to generate flashcards");

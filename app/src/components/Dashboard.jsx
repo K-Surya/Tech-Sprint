@@ -135,7 +135,9 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
                         textAlign: 'center'
                     }}>
                         <span style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }}>QUESTION</span>
-                        <h3 style={{ fontSize: '1.5rem', lineHeight: 1.5, color: '#1a202c' }}>{cards[currentCard].question}</h3>
+                        <h3 style={{ fontSize: '1.5rem', lineHeight: 1.5, color: '#1a202c' }}>
+                            {cards[currentCard].question || cards[currentCard].front || cards[currentCard].term || "No Question Text"}
+                        </h3>
                         <p style={{ position: 'absolute', bottom: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Click to flip</p>
                     </div>
 
@@ -158,7 +160,9 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
                         textAlign: 'center'
                     }}>
                         <span style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--google-blue)', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }}>ANSWER</span>
-                        <p style={{ fontSize: '1.25rem', lineHeight: 1.6, color: '#2d3748' }}>{cards[currentCard].answer}</p>
+                        <p style={{ fontSize: '1.25rem', lineHeight: 1.6, color: '#2d3748' }}>
+                            {cards[currentCard].answer || cards[currentCard].back || cards[currentCard].definition || "No Answer Text"}
+                        </p>
                     </div>
                 </motion.div>
             </div>
@@ -270,7 +274,9 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
                 className="lab-card"
                 style={{ padding: '2.5rem', background: 'white', borderRadius: '24px', marginBottom: '2rem' }}
             >
-                <h3 style={{ fontSize: '1.4rem', marginBottom: '2rem', lineHeight: 1.4 }}>{question.question}</h3>
+                <h3 style={{ fontSize: '1.4rem', marginBottom: '2rem', lineHeight: 1.4 }}>
+                    {question.question || question.text || question.query || "Question Text Missing"}
+                </h3>
                 <div style={{ display: 'grid', gap: '1rem' }}>
                     {Object.entries(question.options).map(([key, text]) => {
                         const isSelected = selectedOption === key;
@@ -597,6 +603,8 @@ const LectureDetailView = ({
     subjectId
 }) => {
     const [activeTab, setActiveTab] = useState('notes'); // 'notes', 'flashcards', 'quiz'
+    const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
+    const [generatingQuiz, setGeneratingQuiz] = useState(false);
 
     const tabs = [
         { id: 'notes', label: 'Lecture Notes', icon: FileText, visible: true },
@@ -629,12 +637,22 @@ const LectureDetailView = ({
                         <button
                             className="btn-modern btn-solid"
                             onClick={async () => {
-                                await generateAndSaveFlashcards();
-                                setActiveTab('flashcards');
+                                try {
+                                    setGeneratingFlashcards(true);
+                                    const success = await generateAndSaveFlashcards();
+                                    if (success) setActiveTab('flashcards');
+                                } finally {
+                                    setGeneratingFlashcards(false);
+                                }
                             }}
-                            style={{ background: 'var(--grad-primary)', border: 'none' }}
+                            disabled={generatingFlashcards}
+                            style={{ background: 'var(--grad-primary)', border: 'none', opacity: generatingFlashcards ? 0.7 : 1, cursor: generatingFlashcards ? 'wait' : 'pointer' }}
                         >
-                            <BrainCircuit size={18} /> Generate Flashcards
+                            {generatingFlashcards ? (
+                                <><Loader2 size={18} className="spinner" /> Generating...</>
+                            ) : (
+                                <><BrainCircuit size={18} /> Generate Flashcards</>
+                            )}
                         </button>
                     )}
 
@@ -642,12 +660,22 @@ const LectureDetailView = ({
                         <button
                             className="btn-modern btn-solid"
                             onClick={async () => {
-                                await generateAndSaveQuiz();
-                                setActiveTab('quiz');
+                                try {
+                                    setGeneratingQuiz(true);
+                                    const success = await generateAndSaveQuiz();
+                                    if (success) setActiveTab('quiz');
+                                } finally {
+                                    setGeneratingQuiz(false);
+                                }
                             }}
-                            style={{ background: '#fff', color: '#1a202c', border: '1px solid #e2e8f0' }}
+                            disabled={generatingQuiz}
+                            style={{ background: '#fff', color: '#1a202c', border: '1px solid #e2e8f0', opacity: generatingQuiz ? 0.7 : 1, cursor: generatingQuiz ? 'wait' : 'pointer' }}
                         >
-                            <Sparkles size={18} className="text-gradient" /> Generate Quiz
+                            {generatingQuiz ? (
+                                <><Loader2 size={18} className="spinner" /> Generating...</>
+                            ) : (
+                                <><Sparkles size={18} className="text-gradient" /> Generate Quiz</>
+                            )}
                         </button>
                     )}
                 </div>
@@ -938,17 +966,17 @@ const Dashboard = ({ user, onLogout }) => {
     };
 
     const generateAndSaveFlashcards = async () => {
-        if (!user || !selectedSubject || !selectedLecture) return;
+        if (!user || !selectedSubject || !selectedLecture) return false;
 
         try {
             // Call Backend API
             const { generateFlashcards } = await import('../services/api');
-            // Use current lecture notes as summary input
-            const generatedCards = await generateFlashcards(selectedLecture.transcript);
+            // Use current lecture notes as summary input and pass subject name
+            const generatedCards = await generateFlashcards(selectedLecture.transcript, selectedSubject.name);
 
             if (!generatedCards || generatedCards.length === 0) {
                 alert("No flashcards could be generated from this content.");
-                return;
+                return false;
             }
 
             const { addFlashcards } = await import('../services/db');
@@ -960,10 +988,12 @@ const Dashboard = ({ user, onLogout }) => {
                 origin: { x: 0.8, y: 0.2 }
             });
 
-            setViewMode('flashcards');
+            // setViewMode('flashcards'); // Removed to keep navigation local
+            return true;
         } catch (error) {
             console.error("Failed to save flashcards:", error);
             alert("Error generating flashcards. The backend might be busy.");
+            return false;
         }
     };
 
@@ -979,7 +1009,7 @@ const Dashboard = ({ user, onLogout }) => {
 
 
     const generateAndSaveQuiz = async () => {
-        if (!user || !selectedSubject || !selectedLecture) return;
+        if (!user || !selectedSubject || !selectedLecture) return false;
 
         try {
             // Call Backend API
@@ -989,17 +1019,19 @@ const Dashboard = ({ user, onLogout }) => {
 
             if (!generatedQuiz || generatedQuiz.length === 0) {
                 alert("No quiz could be generated. Try adding more notes.");
-                return;
+                return false;
             }
 
             const { updateLectureQuiz } = await import('../services/db');
             await updateLectureQuiz(user.uid, selectedSubject.id, selectedLecture.id, generatedQuiz);
 
             confetti({ particleCount: 100, spread: 70, origin: { x: 0.8, y: 0.2 } });
-            setViewMode('quiz');
+            // setViewMode('quiz'); // Removed to keep navigation local
+            return true;
         } catch (error) {
             console.error("Failed to save quiz:", error);
             alert("Error generating quiz. Please check backend connection.");
+            return false;
         }
     };
 
