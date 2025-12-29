@@ -1030,7 +1030,7 @@ const Dashboard = ({ user, onLogout }) => {
             return true;
         } catch (error) {
             console.error("Failed to save quiz:", error);
-            alert("Error generating quiz. Please check backend connection.");
+            alert(`Error generating quiz: ${error.message || "Check console for details"}`);
             return false;
         }
     };
