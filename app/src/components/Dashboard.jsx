@@ -123,19 +123,19 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
                         width: '100%',
                         height: '100%',
                         backfaceVisibility: 'hidden',
-                        background: 'white',
+                        background: 'var(--bg-color)',
                         borderRadius: '24px',
                         padding: '3rem',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-                        border: '1px solid #e1e7f0',
+                        boxShadow: 'var(--shadow-md)',
+                        border: '1px solid var(--border-color)',
                         textAlign: 'center'
                     }}>
                         <span style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }}>QUESTION</span>
-                        <h3 style={{ fontSize: '1.5rem', lineHeight: 1.5, color: '#1a202c' }}>
+                        <h3 style={{ fontSize: '1.5rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
                             {cards[currentCard].question || cards[currentCard].front || cards[currentCard].term || "No Question Text"}
                         </h3>
                         <p style={{ position: 'absolute', bottom: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Click to flip</p>
@@ -147,20 +147,20 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
                         width: '100%',
                         height: '100%',
                         backfaceVisibility: 'hidden',
-                        background: '#f8faff', // NotebookLM uses very light backgrounds
+                        background: 'var(--bg-secondary)',
                         borderRadius: '24px',
                         padding: '3rem',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-                        border: '1px solid #e1e7f0',
+                        boxShadow: 'var(--shadow-md)',
+                        border: '1px solid var(--border-color)',
                         transform: 'rotateY(180deg)',
                         textAlign: 'center'
                     }}>
                         <span style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--google-blue)', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }}>ANSWER</span>
-                        <p style={{ fontSize: '1.25rem', lineHeight: 1.6, color: '#2d3748' }}>
+                        <p style={{ fontSize: '1.25rem', lineHeight: 1.6, color: 'var(--text-primary)' }}>
                             {cards[currentCard].answer || cards[currentCard].back || cards[currentCard].definition || "No Answer Text"}
                         </p>
                     </div>
@@ -253,8 +253,8 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
 
     if (isQuizComplete) {
         return (
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="lab-card" style={{ padding: '3rem', textAlign: 'center', background: 'white', borderRadius: '32px' }}>
-                <h2 className="google-font" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Quiz Completed!</h2>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="lab-card" style={{ padding: '3rem', textAlign: 'center', background: 'var(--bg-color)', borderRadius: '32px' }}>
+                <h2 className="google-font" style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Quiz Completed!</h2>
                 <div style={{ fontSize: '4rem', fontWeight: 700, color: 'var(--google-blue)', marginBottom: '1rem' }}>
                     {score} / {quiz.length}
                 </div>
@@ -286,7 +286,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="lab-card"
-                style={{ padding: '2.5rem', background: 'white', borderRadius: '24px', marginBottom: '2rem' }}
+                style={{ padding: '2.5rem', background: 'var(--bg-color)', borderRadius: '24px', marginBottom: '2rem' }}
             >
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '2rem', lineHeight: 1.4 }}>
                     {question.question || question.text || question.query || "Question Text Missing"}
@@ -299,9 +299,9 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
                         let border = '1px solid #e2e8f0';
 
                         if (selectedOption) {
-                            if (isSelected && isCorrect) { bg = '#f0fff4'; border = '2px solid #48bb78'; }
-                            else if (isSelected && !isCorrect) { bg = '#fff5f5'; border = '2px solid #f56565'; }
-                            else if (isCorrect && showExplanation) { bg = '#f0fff4'; border = '2px solid #48bb78'; }
+                            if (isSelected && isCorrect) { bg = 'var(--google-green-light)'; border = '2px solid #48bb78'; }
+                            else if (isSelected && !isCorrect) { bg = 'var(--google-red-light)'; border = '2px solid #f56565'; }
+                            else if (isCorrect && showExplanation) { bg = 'var(--google-green-light)'; border = '2px solid #48bb78'; }
                         }
 
                         return (
@@ -468,7 +468,7 @@ const AudioRecorder = ({ onSave }) => {
                         key="completed"
                         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     >
-                        <div className="transcription-box" style={{ background: '#f8faff', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid #e1e7f0', whiteSpace: 'pre-line' }}>
+                        <div className="transcription-box" style={{ background: 'var(--bg-secondary)', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid var(--border-color)', whiteSpace: 'pre-line' }}>
                             {transcription}
                         </div>
                         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -528,13 +528,14 @@ const AudioRecorder = ({ onSave }) => {
                                 minHeight: '200px',
                                 padding: '1.5rem',
                                 borderRadius: '16px',
-                                border: '2px solid #e1e7f0',
-                                background: '#fcfdfe',
+                                border: '2px solid var(--border-color)',
+                                background: 'var(--bg-secondary)',
                                 fontSize: '1rem',
                                 lineHeight: 1.6,
                                 marginBottom: '1.5rem',
                                 resize: 'vertical',
-                                fontFamily: 'inherit'
+                                fontFamily: 'inherit',
+                                color: 'var(--text-primary)'
                             }}
                             autoFocus
                         />
@@ -581,20 +582,20 @@ const AudioRecorder = ({ onSave }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div
                             className={`upload-zone ${status === 'recording' ? 'live' : ''}`}
-                            style={{ padding: '3rem 1.5rem', background: status === 'recording' ? '#fff5f5' : '#fcfdfe', border: '2px solid transparent' }}
+                            style={{ padding: '3rem 1.5rem', background: status === 'recording' ? 'var(--google-red-light)' : 'var(--bg-secondary)', border: '2px solid transparent' }}
                             onClick={startRecording}
                         >
                             <Mic size={32} color="var(--google-red)" />
-                            <h4 className="google-font">Live Record</h4>
+                            <h4 className="google-font" style={{ color: 'var(--text-primary)' }}>Live Record</h4>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Click to Speak</p>
                         </div>
                         <div
                             className="upload-zone"
-                            style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
+                            style={{ padding: '3rem 1.5rem', border: '2px dashed var(--border-color)', background: 'var(--bg-secondary)' }}
                             onClick={() => setPasting(true)}
                         >
                             <Clipboard size={32} color="var(--google-green)" style={{ marginBottom: '1rem' }} />
-                            <h4 className="google-font">Paste Text</h4>
+                            <h4 className="google-font" style={{ color: 'var(--text-primary)' }}>Paste Text</h4>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Chapters / Notes</p>
                         </div>
                     </div>
@@ -698,11 +699,11 @@ const LectureDetailView = ({
             <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', flex: 1, minHeight: 0 }}>
                 {/* Inner Sidebar */}
                 <div style={{
-                    background: 'white',
+                    background: 'var(--bg-color)',
                     borderRadius: '24px',
                     padding: '1.5rem',
                     height: 'fit-content',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                    boxShadow: 'var(--shadow-md)'
                 }}>
                     <h3 className="google-font" style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Study Tools</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -744,7 +745,7 @@ const LectureDetailView = ({
                             style={{ height: '100%', flex: 1 }}
                         >
                             {activeTab === 'notes' && (
-                                <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '100%' }}>
+                                <div className="lab-card" style={{ padding: '3rem', background: 'var(--bg-color)', borderRadius: '32px', border: 'none', minHeight: '100%' }}>
                                     <div className="markdown-content">
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                             {selectedLecture.transcript}
@@ -1052,7 +1053,7 @@ const Dashboard = ({ user, onLogout }) => {
 
 
     return (
-        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8faff' }}>
+        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'var(--app-bg)' }}>
             <div className="container" style={{ padding: '2rem 1rem' }}>
 
                 {/* Dashboard Header - Show only if no subject selected */}
@@ -1171,9 +1172,9 @@ const Dashboard = ({ user, onLogout }) => {
                                         ))}
                                         <motion.div
                                             className="subject-card-add"
-                                            style={{ border: '2px dashed #cbd5e0', padding: '2rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#718096' }}
+                                            style={{ border: '2px dashed var(--border-color)', padding: '2rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', background: 'var(--bg-secondary)' }}
                                             onClick={() => setShowSubjectModal(true)}
-                                            whileHover={{ background: '#edf2f7' }}
+                                            whileHover={{ background: 'var(--google-blue-light)' }}
                                         >
                                             <Plus size={32} style={{ marginBottom: '0.5rem' }} />
                                             <span style={{ fontWeight: 600 }}>Add New Subject</span>
@@ -1186,7 +1187,7 @@ const Dashboard = ({ user, onLogout }) => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
                                 {/* Quick Stats */}
-                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                                     <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Study Progress</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -1211,10 +1212,10 @@ const Dashboard = ({ user, onLogout }) => {
                                 </div>
 
                                 {/* Exam Timetable Widget */}
-                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                                     <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Exam Timetable</h3>
-                                    <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
-                                        <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
+                                    <div style={{ padding: '2rem 1rem', border: '1px dashed var(--border-color)', borderRadius: '16px', textAlign: 'center', background: 'var(--bg-secondary)' }}>
+                                        <Calendar size={32} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
                                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>No timetable uploaded yet.</p>
                                         <button className="btn-modern btn-glass" style={{ width: '100%', fontSize: '0.8rem' }} onClick={() => timetableRef.current.click()}>
                                             Upload PDF / Image
