@@ -41,7 +41,7 @@
 /* Hero Section */
 .hero {
     min-height: 90vh;
-    background: var(--app-bg);
+    background: transparent;
     display: flex;
     align-items: center;
     position: relative;
@@ -132,7 +132,7 @@
 
 /* Pain Points Section */
 .pain-points {
-    background: var(--app-bg);
+    background: transparent;
 }
 
 .section-title {
@@ -248,7 +248,7 @@
 
 /* Audio Lab (Interaction Area) */
 .audio-lab {
-    background: var(--app-bg);
+    background: transparent;
 }
 
 .lab-container {

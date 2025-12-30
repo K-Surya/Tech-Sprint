@@ -1053,7 +1053,7 @@ const Dashboard = ({ user, onLogout }) => {
 
 
     return (
-        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'var(--app-bg)' }}>
+        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent' }}>
             <div className="container" style={{ padding: '2rem 1rem' }}>
 
                 {/* Dashboard Header - Show only if no subject selected */}

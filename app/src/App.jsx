@@ -37,6 +37,40 @@ import Dashboard from './components/Dashboard';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
+// --- Decorative Components ---
+const StarBackground = () => {
+    const stars = React.useMemo(() => {
+        console.log("Generating stars...");
+        return Array.from({ length: 100 }).map((_, i) => ({
+            id: i,
+            size: Math.random() * 4 + 1,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            duration: Math.random() * 15 + 10,
+            delay: Math.random() * 5
+        }));
+    }, []);
+
+    return (
+        <div className="star-container">
+            {stars.map(star => (
+                <div
+                    key={star.id}
+                    className="star"
+                    style={{
+                        width: star.size,
+                        height: star.size,
+                        left: star.left,
+                        top: star.top,
+                        animationDuration: `${star.duration}s`,
+                        animationDelay: `${star.delay}s`
+                    }}
+                />
+            ))}
+        </div>
+    );
+};
+
 // --- Components ---
 
 const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }) => (
@@ -332,12 +366,20 @@ function App() {
     };
 
     if (showAuth) {
-        return <Auth onBack={() => setShowAuth(false)} onDemoLogin={handleDemoLogin} />;
+        return (
+            <div className="app-container">
+                <div className="bg-gradient-layer" />
+                <StarBackground />
+                <Auth onBack={() => setShowAuth(false)} onDemoLogin={handleDemoLogin} />
+            </div>
+        );
     }
 
     if (currentUser) {
         return (
             <div className="app-container">
+                <div className="bg-gradient-layer" />
+                <StarBackground />
                 <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={true} theme={theme} toggleTheme={toggleTheme} />
                 <Dashboard user={currentUser} onLogout={handleLogout} />
             </div>
@@ -346,6 +388,8 @@ function App() {
 
     return (
         <div className="app-container">
+            <div className="bg-gradient-layer" />
+            <StarBackground />
             <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
             <Hero onActionClick={handleActionClick} />
             <PainPoints />
