@@ -31,6 +31,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { cleanText } from '../utils/textCleaner';
 
 // --- Flashcard Component ---
 // --- Flashcard Component --- //
@@ -918,7 +919,14 @@ const Dashboard = ({ user, onLogout }) => {
         try {
             // 1. Call Backend API to generate structured notes
             const { generateNotes } = await import('../services/api');
-            const structuredNotes = await generateNotes(rawText, selectedSubject.name);
+
+            // Clean the text before sending to AI
+            const cleanedTranscript = cleanText(rawText);
+            console.log("Original Text Length:", rawText.length);
+            console.log("Cleaned Text Length:", cleanedTranscript.length);
+            console.log("Cleaned Text Preview:", cleanedTranscript.slice(0, 100));
+
+            const structuredNotes = await generateNotes(cleanedTranscript, selectedSubject.name);
             if (!structuredNotes) throw new Error("No notes returned from AI");
 
             // 2. Save both raw and structured (or just structured)
