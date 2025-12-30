@@ -97,8 +97,8 @@ const Auth = ({ onBack }) => {
 
                 {error && (
                     <div style={{
-                        background: '#fce8e6',
-                        color: '#d93025',
+                        background: 'var(--google-red-light)',
+                        color: 'var(--google-red)',
                         padding: '1rem',
                         borderRadius: '12px',
                         marginBottom: '1.5rem',
@@ -120,7 +120,7 @@ const Auth = ({ onBack }) => {
                                 <input
                                     type="text"
                                     placeholder="Full Name"
-                                    style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 3rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.95rem' }}
+                                    style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 3rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.95rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     required
@@ -135,7 +135,7 @@ const Auth = ({ onBack }) => {
                             <input
                                 type="email"
                                 placeholder="Email Address"
-                                style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 3rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.95rem' }}
+                                style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 3rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.95rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -149,7 +149,7 @@ const Auth = ({ onBack }) => {
                             <input
                                 type="password"
                                 placeholder="Password"
-                                style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 3rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.95rem' }}
+                                style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 3rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.95rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
@@ -173,7 +173,7 @@ const Auth = ({ onBack }) => {
 
                 <button
                     className="btn-modern btn-glass"
-                    style={{ width: '100%', justifyContent: 'center', background: 'white' }}
+                    style={{ width: '100%', justifyContent: 'center', background: 'var(--bg-color)' }}
                     onClick={handleGoogleSignIn}
                     disabled={loading}
                 >
