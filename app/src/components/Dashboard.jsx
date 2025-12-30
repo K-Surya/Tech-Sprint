@@ -177,7 +177,21 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
 
 // --- Quiz Component ---
 // --- Quiz Component --- //
-const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) => {
+const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGenerate }) => {
+    const quiz = React.useMemo(() => {
+        if (!rawQuiz) return [];
+        if (Array.isArray(rawQuiz)) return rawQuiz;
+        try {
+            // Handle if it's a string, or an object containing a quiz array
+            const parsed = typeof rawQuiz === 'string' ? JSON.parse(rawQuiz) : rawQuiz;
+            const finalQuiz = parsed.quiz || (Array.isArray(parsed) ? parsed : []);
+            return Array.isArray(finalQuiz) ? finalQuiz : [];
+        } catch (e) {
+            console.error("Failed to parse quiz data:", e);
+            return [];
+        }
+    }, [rawQuiz]);
+
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [score, setScore] = useState(0);
     const [selectedOption, setSelectedOption] = useState(null);
@@ -201,7 +215,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
     };
 
     const handleOptionSelect = (optionKey) => {
-        if (selectedOption) return; // Prevent multiple selects
+        if (selectedOption || !quiz[currentQuestion]) return;
         setSelectedOption(optionKey);
         setShowExplanation(true);
 
@@ -223,7 +237,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
             setSelectedOption(null);
             setShowExplanation(false);
         } else {
-            finishQuiz(score); // Score is already updated in handleOptionSelect
+            finishQuiz(score);
         }
     };
 
@@ -278,7 +292,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
                     {question.question || question.text || question.query || "Question Text Missing"}
                 </h3>
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                    {Object.entries(question.options).map(([key, text]) => {
+                    {question.options && Object.entries(question.options).map(([key, text]) => {
                         const isSelected = selectedOption === key;
                         const isCorrect = question.correctAnswer === key;
                         let bg = 'white';
