@@ -244,7 +244,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
     // Safety check if no quiz data passed
     if (!quiz || quiz.length === 0) return (
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ background: '#fff', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
+            <div style={{ background: 'var(--bg-color)', padding: '2rem', borderRadius: '24px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                 <h3 className="google-font">No Quiz Found</h3>
                 <p style={{ color: 'var(--text-secondary)' }}>Click "Generate" above to create one.</p>
             </div>
@@ -295,8 +295,8 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
                     {question.options && Object.entries(question.options).map(([key, text]) => {
                         const isSelected = selectedOption === key;
                         const isCorrect = question.correctAnswer === key;
-                        let bg = 'white';
-                        let border = '1px solid #e2e8f0';
+                        let bg = 'var(--bg-secondary)';
+                        let border = '1px solid var(--border-color)';
 
                         if (selectedOption) {
                             if (isSelected && isCorrect) { bg = 'var(--google-green-light)'; border = '2px solid #48bb78'; }
@@ -320,8 +320,8 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
                                     gap: '1rem'
                                 }}
                             >
-                                <span style={{ fontWeight: 700, minWidth: '30px', height: '30px', borderRadius: '50%', background: '#edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{key}</span>
-                                <span style={{ fontSize: '1.05rem' }}>{text}</span>
+                                <span style={{ fontWeight: 700, minWidth: '30px', height: '30px', borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>{key}</span>
+                                <span style={{ fontSize: '1.05rem', color: 'var(--text-primary)' }}>{text}</span>
                                 {selectedOption && isCorrect && <CheckCircle2 size={20} color="#48bb78" style={{ marginLeft: 'auto' }} />}
                             </div>
                         );
@@ -330,7 +330,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
 
                 <AnimatePresence>
                     {showExplanation && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: '2rem', padding: '1.5rem', background: '#ebf8ff', borderRadius: '16px', color: '#2c5282' }}>
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: '2rem', padding: '1.5rem', background: 'var(--google-blue-light)', borderRadius: '16px', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
                             <strong>Explanation:</strong> {question.explanation}
                         </motion.div>
                     )}
@@ -868,7 +868,7 @@ const SubjectDetailView = ({
 
             {/* Sidebar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                     <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Next Exam</h3>
                     <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                         <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
