@@ -5,13 +5,14 @@ import {
     setDoc,
     addDoc,
     getDocs,
+    getDoc,
     query,
     where,
     onSnapshot,
     serverTimestamp,
     orderBy,
     updateDoc,
-
+    deleteDoc,
     arrayUnion,
     increment
 } from 'firebase/firestore';
@@ -125,3 +126,62 @@ export const saveQuizScore = async (userId, subjectId, lectureId, score) => {
         })
     });
 };
+
+// --- Exam Timetable ---
+export const addExam = async (userId, examData) => {
+    const examsRef = collection(db, 'users', userId, 'exams');
+    const docRef = await addDoc(examsRef, {
+        ...examData,
+        createdAt: serverTimestamp()
+    });
+    return docRef.id;
+};
+
+export const subscribeToExams = (userId, callback) => {
+    const examsRef = collection(db, 'users', userId, 'exams');
+    const q = query(examsRef, orderBy('examDate', 'asc'));
+    return onSnapshot(q, (snapshot) => {
+        const exams = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(exams);
+    });
+};
+
+export const deleteExam = async (userId, examId) => {
+    const examRef = doc(db, 'users', userId, 'exams', examId);
+    await deleteDoc(examRef);
+};
+
+export const updateExamCalendarId = async (userId, examId, calendarEventId) => {
+    const examRef = doc(db, 'users', userId, 'exams', examId);
+    await updateDoc(examRef, {
+        calendarEventId: calendarEventId
+    });
+};
+
+export const clearExamCalendarId = async (userId, examId) => {
+    const examRef = doc(db, 'users', userId, 'exams', examId);
+    await updateDoc(examRef, {
+        calendarEventId: null
+    });
+};
+
+// Save calendar authorization status
+export const saveCalendarAuthStatus = async (userId, isAuthorized) => {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+        calendarAuthorized: isAuthorized,
+        calendarAuthorizedAt: new Date().toISOString()
+    });
+};
+
+// Get calendar authorization status
+export const getCalendarAuthStatus = async (userId) => {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    return userDoc.exists() ? userDoc.data().calendarAuthorized || false : false;
+};
+
+

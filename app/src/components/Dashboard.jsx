@@ -870,6 +870,11 @@ const Dashboard = ({ user, onLogout }) => {
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
     const [showSubjectModal, setShowSubjectModal] = useState(false);
+    const [showExamModal, setShowExamModal] = useState(false);
+    const [exams, setExams] = useState([]);
+    const [newExam, setNewExam] = useState({ subjectName: '', examDate: '', syncToCalendar: false });
+    const [calendarAuthorized, setCalendarAuthorized] = useState(false);
+    const [calendarInitialized, setCalendarInitialized] = useState(false);
 
     // Navigation State
     const [selectedSubject, setSelectedSubject] = useState(null);
@@ -887,12 +892,38 @@ const Dashboard = ({ user, onLogout }) => {
     // Initial User Setup & Data Fetching
     useEffect(() => {
         if (user) {
-            import('../services/db').then(({ initializeUser, subscribeToSubjects }) => {
+            import('../services/db').then(({ initializeUser, subscribeToSubjects, subscribeToExams }) => {
                 initializeUser(user);
-                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
+                const unsubscribeSubjects = subscribeToSubjects(user.uid, (data) => {
                     setSubjects(data);
                 });
-                return () => unsubscribe();
+                const unsubscribeExams = subscribeToExams(user.uid, (data) => {
+                    setExams(data);
+                });
+                return () => {
+                    unsubscribeSubjects();
+                    unsubscribeExams();
+                };
+            });
+
+            // Initialize Google Calendar and check saved auth status
+            import('../services/calendar').then(async ({ initializeGoogleCalendar, isCalendarAuthorized }) => {
+                const { getCalendarAuthStatus } = await import('../services/db');
+
+                await initializeGoogleCalendar();
+                setCalendarInitialized(true);
+
+                // Check if user previously authorized calendar
+                const savedAuthStatus = await getCalendarAuthStatus(user.uid);
+                const currentAuthStatus = isCalendarAuthorized();
+
+                if (savedAuthStatus && !currentAuthStatus) {
+                    console.log('ℹ️ User previously authorized calendar, but token expired');
+                    // Token might have expired, user will need to re-authorize
+                }
+
+                setCalendarAuthorized(currentAuthStatus || savedAuthStatus);
+                console.log('📊 Calendar auth status:', currentAuthStatus ? 'Active' : savedAuthStatus ? 'Previously authorized' : 'Not authorized');
             });
         }
     }, [user]);
@@ -910,6 +941,47 @@ const Dashboard = ({ user, onLogout }) => {
             setLectures([]);
         }
     }, [user, selectedSubject]);
+
+    // Cleanup past exams
+    useEffect(() => {
+        if (exams.length > 0 && calendarAuthorized) {
+            const cleanupPastExams = async () => {
+                const { cleanupPastEvents } = await import('../services/calendar');
+                const { deleteExam } = await import('../services/db');
+
+                const pastExamIds = await cleanupPastEvents(exams);
+                // Delete past exams from database
+                for (const examId of pastExamIds) {
+                    await deleteExam(user.uid, examId);
+                }
+            };
+            cleanupPastExams();
+        }
+    }, [exams, calendarAuthorized, user]);
+
+    // Verify calendar sync status (detect external deletions)
+    useEffect(() => {
+        if (exams.length > 0 && calendarAuthorized && user) {
+            const verifySyncs = async () => {
+                const { verifyAllExamSyncs } = await import('../services/calendar');
+                const { deleteExam } = await import('../services/db');
+
+                // Callback to delete exam if event was deleted externally
+                const deleteCallback = async (examId) => {
+                    await deleteExam(user.uid, examId);
+                    console.log('🗑️ Deleted exam from timetable (removed from Google Calendar externally)');
+                };
+
+                await verifyAllExamSyncs(exams, user.uid, deleteCallback);
+            };
+
+            // Run verification every 30 seconds
+            const interval = setInterval(verifySyncs, 30000);
+            verifySyncs(); // Run immediately on mount
+
+            return () => clearInterval(interval);
+        }
+    }, [exams, calendarAuthorized, user]);
 
     // Recording logic moved to AudioRecorder component for performance
     const saveLectureToDB = async (rawText) => {
@@ -961,6 +1033,89 @@ const Dashboard = ({ user, onLogout }) => {
             } catch (error) {
                 console.error("Error adding subject:", error);
                 alert("Failed to create subject. Check console.");
+            }
+        }
+    };
+
+    const addExam = async () => {
+        if (newExam.subjectName.trim() && newExam.examDate && user) {
+            try {
+                console.log('🎯 Adding exam:', newExam);
+                console.log('📊 Calendar status:', { authorized: calendarAuthorized, syncRequested: newExam.syncToCalendar });
+
+                const examData = {
+                    subjectName: newExam.subjectName,
+                    examDate: newExam.examDate
+                };
+
+                // Add to database first
+                const { addExam, updateExamCalendarId } = await import('../services/db');
+                const examId = await addExam(user.uid, examData);
+                console.log('✅ Exam saved to database, ID:', examId);
+
+                // If calendar sync is enabled, create calendar event
+                if (newExam.syncToCalendar && calendarAuthorized) {
+                    console.log('📅 Syncing to Google Calendar...');
+                    try {
+                        const { createExamEvent } = await import('../services/calendar');
+                        const eventId = await createExamEvent(examData);
+                        console.log('✅ Calendar event created, ID:', eventId);
+
+                        // Update exam with calendar event ID
+                        await updateExamCalendarId(user.uid, examId, eventId);
+                        console.log('✅ Database updated with calendar event ID');
+                    } catch (calError) {
+                        console.error("❌ Failed to create calendar event:", calError);
+                        alert("Exam added but failed to sync to Google Calendar. Error: " + (calError.message || 'Unknown error'));
+                    }
+                } else {
+                    console.log('ℹ️ Skipping calendar sync:', !newExam.syncToCalendar ? 'Not requested' : 'Not authorized');
+                }
+
+                setNewExam({ subjectName: '', examDate: '', syncToCalendar: false });
+                setShowExamModal(false);
+            } catch (error) {
+                console.error("❌ Error adding exam:", error);
+                alert("Failed to add exam. Check console for details.");
+            }
+        }
+    };
+
+    const handleCalendarAuth = async () => {
+        try {
+            const { requestCalendarAccess, isCalendarAuthorized } = await import('../services/calendar');
+            const { saveCalendarAuthStatus } = await import('../services/db');
+
+            await requestCalendarAccess();
+            const authStatus = isCalendarAuthorized();
+            setCalendarAuthorized(authStatus);
+
+            // Save authorization status to database
+            if (authStatus) {
+                await saveCalendarAuthStatus(user.uid, true);
+                console.log('✅ Calendar authorization saved to database');
+            }
+        } catch (error) {
+            console.error("Calendar authorization failed:", error);
+            alert("Failed to authorize Google Calendar access.");
+        }
+    };
+
+    const removeExam = async (examId, calendarEventId) => {
+        if (user) {
+            try {
+                // Delete from calendar first if it has an event ID
+                if (calendarEventId && calendarAuthorized) {
+                    const { deleteExamEvent } = await import('../services/calendar');
+                    await deleteExamEvent(calendarEventId);
+                }
+
+                // Then delete from database
+                const { deleteExam } = await import('../services/db');
+                await deleteExam(user.uid, examId);
+            } catch (error) {
+                console.error("Error deleting exam:", error);
+                alert("Failed to delete exam.");
             }
         }
     };
@@ -1056,9 +1211,8 @@ const Dashboard = ({ user, onLogout }) => {
                             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Select a subject to start recording or view notes.</p>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button className="btn-modern btn-glass" onClick={() => timetableRef.current.click()}>
-                                <Calendar size={20} /> Upload Timetable
-                                <input type="file" ref={timetableRef} hidden />
+                            <button className="btn-modern btn-glass" onClick={() => setShowExamModal(true)}>
+                                <Calendar size={20} /> Add Exam
                             </button>
                             <button className="btn-modern btn-solid" onClick={() => setShowSubjectModal(true)}>
                                 <Plus size={20} /> Add Subject
@@ -1198,14 +1352,81 @@ const Dashboard = ({ user, onLogout }) => {
 
                                 {/* Exam Timetable Widget */}
                                 <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Exam Timetable</h3>
-                                    <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
-                                        <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
-                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>No timetable uploaded yet.</p>
-                                        <button className="btn-modern btn-glass" style={{ width: '100%', fontSize: '0.8rem' }} onClick={() => timetableRef.current.click()}>
-                                            Upload PDF / Image
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                        <h3 className="google-font" style={{ fontSize: '1.1rem', margin: 0 }}>Exam Timetable</h3>
+                                        <button
+                                            className="btn-modern btn-glass"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                            onClick={() => setShowExamModal(true)}
+                                        >
+                                            <Plus size={14} /> Add
                                         </button>
                                     </div>
+                                    {exams.length === 0 ? (
+                                        <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
+                                            <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No exams scheduled yet.</p>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {exams
+                                                .filter(exam => {
+                                                    // Only show upcoming exams (today and future)
+                                                    const examDate = new Date(exam.examDate);
+                                                    const today = new Date();
+                                                    examDate.setHours(0, 0, 0, 0);
+                                                    today.setHours(0, 0, 0, 0);
+                                                    return examDate >= today;
+                                                })
+                                                .slice(0, 5)
+                                                .map((exam) => {
+                                                    const examDate = new Date(exam.examDate);
+                                                    const today = new Date();
+                                                    const daysUntil = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+                                                    return (
+                                                        <div
+                                                            key={exam.id}
+                                                            style={{
+                                                                padding: '1rem',
+                                                                background: '#f8faff',
+                                                                borderRadius: '12px',
+                                                                border: '1px solid #e1e7f0',
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center'
+                                                            }}
+                                                        >
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                                                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{exam.subjectName}</span>
+                                                                    {exam.calendarEventId && (
+                                                                        <Calendar size={14} color="var(--google-blue)" title="Synced to Google Calendar" />
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                                    {examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                    {daysUntil >= 0 && ` • ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeExam(exam.id, exam.calendarEventId)}
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    padding: '0.25rem',
+                                                                    color: 'var(--text-secondary)',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center'
+                                                                }}
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Recent Activity */}
@@ -1254,6 +1475,119 @@ const Dashboard = ({ user, onLogout }) => {
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button className="btn-modern btn-glass" style={{ flex: 1 }} onClick={() => setShowSubjectModal(false)}>Cancel</button>
                                 <button className="btn-modern btn-solid" style={{ flex: 1 }} onClick={addSubject}>Create Section</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Exam Modal */}
+            <AnimatePresence>
+                {showExamModal && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }} onClick={() => setShowExamModal(false)}>
+                        <motion.div
+                            className="lab-card"
+                            style={{ width: '100%', maxWidth: '400px', padding: '2rem', background: 'white' }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="google-font" style={{ marginBottom: '1.5rem' }}>Add Exam</h3>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Subject</label>
+                                <select
+                                    value={newExam.subjectName}
+                                    onChange={(e) => setNewExam({ ...newExam, subjectName: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '1rem',
+                                        background: 'white'
+                                    }}
+                                >
+                                    <option value="">Select a subject</option>
+                                    {subjects.map((subject) => (
+                                        <option key={subject.id} value={subject.name}>{subject.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Exam Date</label>
+                                <input
+                                    type="date"
+                                    value={newExam.examDate}
+                                    onChange={(e) => setNewExam({ ...newExam, examDate: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '1rem'
+                                    }}
+                                />
+                            </div>
+
+                            {/* Google Calendar Sync Section */}
+                            <div style={{
+                                marginBottom: '1.5rem',
+                                padding: '1rem',
+                                background: '#f8faff',
+                                borderRadius: '12px',
+                                border: '1px solid #e1e7f0'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <label style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={newExam.syncToCalendar}
+                                            onChange={(e) => setNewExam({ ...newExam, syncToCalendar: e.target.checked })}
+                                            disabled={!calendarAuthorized}
+                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                        />
+                                        <Calendar size={16} />
+                                        Sync to Google Calendar
+                                    </label>
+                                    {calendarAuthorized ? (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--google-green)', fontWeight: 600 }}>
+                                            ✓ Connected
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={handleCalendarAuth}
+                                            className="btn-modern btn-glass"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                            type="button"
+                                        >
+                                            Connect
+                                        </button>
+                                    )}
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+                                    {calendarAuthorized
+                                        ? 'Exam will be added to your Google Calendar with reminders'
+                                        : 'Connect your Google Calendar to sync exams automatically'}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button className="btn-modern btn-glass" style={{ flex: 1 }} onClick={() => setShowExamModal(false)}>Cancel</button>
+                                <button
+                                    className="btn-modern btn-solid"
+                                    style={{ flex: 1 }}
+                                    onClick={addExam}
+                                    disabled={!newExam.subjectName || !newExam.examDate}
+                                >
+                                    Add Exam
+                                </button>
                             </div>
                         </motion.div>
                     </div>
