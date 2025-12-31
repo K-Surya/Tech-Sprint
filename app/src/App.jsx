@@ -36,6 +36,8 @@ import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import ErrorBoundary from './components/ErrorBoundary';
+import { avatars } from './components/AvatarSelection';
 
 // --- Decorative Components ---
 const StarBackground = () => {
@@ -73,7 +75,7 @@ const StarBackground = () => {
 
 // --- Components ---
 
-const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }) => (
+const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme, onProfileClick }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 1.5rem' }}>
             <div className="logo-section" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => window.scrollTo(0, 0)}>
@@ -98,9 +100,38 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }
 
                 {user ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--google-blue-light)', padding: '0.4rem 1rem', borderRadius: '20px', color: 'var(--google-blue)', fontWeight: 600, fontSize: '0.85rem' }}>
-                            <UserIcon size={16} />
-                            {user.displayName || user.email?.split('@')[0] || 'Scholar'}
+                        <div
+                            onClick={onProfileClick}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.8rem',
+                                background: 'white',
+                                padding: '0.3rem 0.4rem 0.3rem 1rem',
+                                borderRadius: '30px',
+                                border: '1px solid var(--border-color)',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                                color: 'var(--text-primary)',
+                                fontWeight: 600,
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}>
+                            <span>{user.profile?.nickname || user.displayName || user.email?.split('@')[0] || 'Scholar'}</span>
+                            <div style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                background: 'var(--bg-secondary)',
+                                border: '1px solid var(--google-blue-light)'
+                            }}>
+                                <img
+                                    src={(user.profile?.avatar && avatars.find(a => a.id === user.profile.avatar)?.src) || (avatars && avatars[0]?.src)}
+                                    alt="Avatar"
+                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                />
+                            </div>
                         </div>
                         <button
                             onClick={() => signOut(auth)}
@@ -321,6 +352,7 @@ function App() {
     const [user, setUser] = useState(null);
     const [demoUser, setDemoUser] = useState(null);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [profileReq, setProfileReq] = useState(0);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -331,15 +363,38 @@ function App() {
 
     const currentUser = user || demoUser;
 
+    const [userProfile, setUserProfile] = useState(null);
+
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-            setUser(authUser);
+        let profileUnsubscribe = null;
+
+        const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+            if (profileUnsubscribe) {
+                profileUnsubscribe();
+                profileUnsubscribe = null;
+            }
+
             if (authUser) {
+                try {
+                    const { subscribeToUserProfile } = await import('./services/db');
+                    profileUnsubscribe = subscribeToUserProfile(authUser.uid, (profile) => {
+                        setUserProfile(profile);
+                    });
+                } catch (e) {
+                    console.error("Error subscribing to profile in App:", e);
+                }
+                setUser(authUser);
                 setShowAuth(false);
                 setDemoUser(null);
+            } else {
+                setUser(null);
+                setUserProfile(null);
             }
         });
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (profileUnsubscribe) profileUnsubscribe();
+        };
     }, []);
 
     useEffect(() => {
@@ -380,8 +435,24 @@ function App() {
             <div className="app-container">
                 <div className="bg-gradient-layer" />
                 <StarBackground />
-                <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={true} theme={theme} toggleTheme={toggleTheme} />
-                <Dashboard user={currentUser} onLogout={handleLogout} />
+                <Navbar
+                    scrolled={scrolled}
+                    user={{ ...currentUser, profile: userProfile }} // Pass merged for Navbar
+                    onAuthClick={() => setShowAuth(true)}
+                    isDashboard={true}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                    onProfileClick={() => setProfileReq(n => n + 1)}
+                />
+                <ErrorBoundary>
+                    <Dashboard
+                        user={currentUser}
+                        userProfile={userProfile}
+                        setUserProfile={setUserProfile}
+                        onLogout={handleLogout}
+                        profileRequest={profileReq}
+                    />
+                </ErrorBoundary>
             </div>
         );
     }

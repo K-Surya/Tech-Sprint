@@ -5,6 +5,7 @@ import {
     setDoc,
     addDoc,
     getDocs,
+    getDoc,
     query,
     where,
     onSnapshot,
@@ -20,11 +21,49 @@ import {
 export const initializeUser = async (user) => {
     if (!user) return;
     const userRef = doc(db, 'users', user.uid);
-    await setDoc(userRef, {
-        email: user.email,
-        displayName: user.displayName,
-        lastLogin: serverTimestamp()
-    }, { merge: true });
+    const docSnap = await getDoc(userRef);
+
+    if (!docSnap.exists()) {
+        // New User
+        await setDoc(userRef, {
+            email: user.email,
+            displayName: user.displayName, // Keep for reference
+            nickname: user.displayName || 'Scholar', // Default nickname
+            avatar: null, // Will trigger selection
+            joinedAt: serverTimestamp(),
+            lastLogin: serverTimestamp()
+        });
+    } else {
+        // Existing User - just update login
+        await updateDoc(userRef, {
+            lastLogin: serverTimestamp()
+        });
+    }
+};
+
+export const getUserProfile = async (userId) => {
+    const userRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+        return docSnap.data();
+    }
+    return null;
+};
+
+export const updateUserProfile = async (userId, data) => {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, data);
+};
+
+export const subscribeToUserProfile = (userId, callback) => {
+    const userRef = doc(db, 'users', userId);
+    return onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+            callback(docSnap.data());
+        } else {
+            callback(null); // Or {} if preferred, but null matches 'not found'
+        }
+    });
 };
 
 // --- Subjects ---
