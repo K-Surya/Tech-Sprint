@@ -200,7 +200,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
                             bottom: 0,
                             width: '300px',
                             background: 'var(--glass-bg)',
-                            backdropFilter: 'blur(20px)',
+                            backdropFilter: 'blur(var(--glass-blur, 12px))',
                             borderRight: '1px solid var(--border-color)',
                             zIndex: 2001,
                             display: 'flex',
@@ -271,8 +271,8 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
                                                     padding: '0.75rem 1rem',
                                                     borderRadius: '12px',
                                                     border: 'none',
-                                                    background: 'transparent',
-                                                    color: 'var(--text-primary)',
+                                                    background: currentSubject?.id === sub.id ? 'var(--google-blue-light)' : 'transparent',
+                                                    color: currentSubject?.id === sub.id ? 'var(--google-blue)' : 'var(--text-primary)',
                                                     fontWeight: 500,
                                                     cursor: 'pointer',
                                                     textAlign: 'left',
@@ -284,8 +284,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
                                                 <span
                                                     style={{
                                                         fontSize: '0.9rem',
-                                                        fontWeight: currentSubject?.id === sub.id ? 700 : 500,
-                                                        color: currentSubject?.id === sub.id ? 'var(--google-blue)' : 'inherit'
+                                                        fontWeight: currentSubject?.id === sub.id ? 700 : 500
                                                     }}
                                                 >
                                                     {sub.name}
@@ -301,6 +300,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
 
                         <div className="sidebar-footer" style={{ paddingTop: '2rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <button
+                                onClick={() => { onNavigate(null, 'profile'); onClose(); }}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -320,6 +320,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
                                 <span>Profile</span>
                             </button>
                             <button
+                                onClick={() => { onNavigate(null, 'settings'); onClose(); }}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -630,6 +631,14 @@ function App() {
     const [subjects, setSubjects] = useState([]);
     const [selectedSubject, setSelectedSubject] = useState(null);
     const [viewMode, setViewMode] = useState('subject');
+    const [glassIntensity, setGlassIntensity] = useState(
+        parseInt(localStorage.getItem('glassIntensity') || '12')
+    );
+
+    useEffect(() => {
+        document.documentElement.style.setProperty('--glass-blur', `${glassIntensity}px`);
+        localStorage.setItem('glassIntensity', glassIntensity);
+    }, [glassIntensity]);
 
     useEffect(() => {
         if (currentUser) {
@@ -691,6 +700,8 @@ function App() {
                     setSelectedSubject={setSelectedSubject}
                     viewMode={viewMode}
                     setViewMode={setViewMode}
+                    glassIntensity={glassIntensity}
+                    setGlassIntensity={setGlassIntensity}
                 />
             </div>
         );

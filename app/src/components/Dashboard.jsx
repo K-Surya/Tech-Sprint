@@ -880,7 +880,146 @@ const SubjectDetailView = ({
     </motion.div>
 );
 
-const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode }) => {
+const SettingsView = ({ onBack, user, glassIntensity, setGlassIntensity }) => {
+    const [settings, setSettings] = useState({
+        aiModel: 'gemini-1.5-flash',
+        quality: 'high',
+        autoQuiz: true,
+        animations: true,
+        language: 'English'
+    });
+
+    const SettingRow = ({ icon: Icon, label, description, children }) => (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ padding: '0.75rem', background: 'var(--google-blue-light)', borderRadius: '12px', color: 'var(--google-blue)' }}>
+                    <Icon size={20} />
+                </div>
+                <div>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{label}</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{description}</p>
+                </div>
+            </div>
+            {children}
+        </div>
+    );
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ padding: '0.5rem', borderRadius: '12px' }}>
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="google-font" style={{ fontSize: '2rem', margin: 0 }}>Global Settings</h2>
+            </div>
+
+            <section style={{ marginBottom: '3rem' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--google-blue)' }}>AI & Intelligence</h3>
+                <SettingRow
+                    icon={Cpu}
+                    label="AI Model"
+                    description="Choose the engine powering your lecture analysis"
+                >
+                    <select
+                        value={settings.aiModel}
+                        onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
+                        style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    >
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Brainy)</option>
+                    </select>
+                </SettingRow>
+
+                <SettingRow
+                    icon={Sparkles}
+                    label="Auto-generate Quiz"
+                    description="Automatically create quizzes after every lecture"
+                >
+                    <input
+                        type="checkbox"
+                        checked={settings.autoQuiz}
+                        onChange={() => setSettings({ ...settings, autoQuiz: !settings.autoQuiz })}
+                        style={{ width: '20px', height: '20px', accentColor: 'var(--google-blue)' }}
+                    />
+                </SettingRow>
+            </section>
+
+            <SettingRow
+                icon={Volume2}
+                label="Glassmorphism Intensity"
+                description="Adjust the blur effect of the user interface"
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <input
+                        type="range"
+                        min="0" max="40"
+                        value={glassIntensity}
+                        onChange={(e) => setGlassIntensity(parseInt(e.target.value))}
+                        style={{ accentColor: 'var(--google-blue)', width: '150px' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, width: '40px', textAlign: 'right' }}>{glassIntensity}px</span>
+                </div>
+            </SettingRow>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button className="btn-modern btn-glass" style={{ padding: '0.8rem 2rem' }}>Reset Defaults</button>
+                <button
+                    className="btn-modern btn-solid"
+                    style={{ padding: '0.8rem 2rem' }}
+                    onClick={() => {
+                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                        onBack();
+                    }}
+                >
+                    Save Changes
+                </button>
+            </div>
+        </motion.div>
+    );
+};
+
+const ProfileView = ({ onBack, user }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            style={{ maxWidth: '600px', margin: '4rem auto', padding: '3rem', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', borderRadius: '32px', border: '1px solid var(--border-color)', textAlign: 'center' }}
+        >
+            <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 2rem' }}>
+                <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, var(--google-blue), var(--google-purple))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                    <UserIcon size={60} />
+                </div>
+                <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--google-green)', padding: '0.5rem', borderRadius: '50%', border: '4px solid var(--glass-bg)' }}>
+                    <CheckCircle2 size={16} color="white" />
+                </div>
+            </div>
+
+            <h2 className="google-font" style={{ fontSize: '2rem', margin: '0 0 0.5rem' }}>{user.displayName || user.email?.split('@')[0]}</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{user.email}</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '20px' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-blue)' }}>12</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Lectures</div>
+                </div>
+                <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '20px' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-green)' }}>85%</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Avg Score</div>
+                </div>
+            </div>
+
+            <button onClick={onBack} className="btn-modern btn-solid" style={{ width: '100%', padding: '1rem' }}>Return to Dashboard</button>
+        </motion.div>
+    );
+};
+
+const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
@@ -1054,8 +1193,8 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
         <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent' }}>
             <div className="container" style={{ padding: '2rem 1rem' }}>
 
-                {/* Dashboard Header - Show only if no subject selected */}
-                {!selectedSubject && (
+                {/* Dashboard Header - Show only if on main overview (no subject selected and not in settings/profile) */}
+                {!selectedSubject && viewMode === 'subject' && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
                         <div>
                             <motion.h1
@@ -1109,6 +1248,20 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
                             generateAndSaveQuiz={generateAndSaveQuiz}
                             userId={user.uid}
                             subjectId={selectedSubject.id}
+                        />
+                    ) : viewMode === 'settings' ? (
+                        <SettingsView
+                            key="settings"
+                            onBack={() => setViewMode('subject')}
+                            user={user}
+                            glassIntensity={glassIntensity}
+                            setGlassIntensity={setGlassIntensity}
+                        />
+                    ) : viewMode === 'profile' ? (
+                        <ProfileView
+                            key="profile"
+                            onBack={() => setViewMode('subject')}
+                            user={user}
                         />
                     ) : selectedSubject ? (
                         <SubjectDetailView
