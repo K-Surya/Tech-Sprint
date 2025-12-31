@@ -719,6 +719,8 @@ function App() {
                 />
                 <Dashboard
                     user={currentUser}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
                     onLogout={handleLogout}
                     subjects={subjects}
                     setSubjects={setSubjects}
