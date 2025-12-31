@@ -815,7 +815,7 @@ const SubjectDetailView = ({
         if (!match) return false;
 
         // Only show upcoming exams
-        const examDate = new Date(e.examDate);
+        const examDate = parseLocalDate(e.examDate);
         const today = new Date();
         examDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
@@ -1068,25 +1068,29 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
     // userProfile is passed from App.jsx
 
 
+    // Help fix timezone issues with date comparisons
+    const parseLocalDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    };
+
     useEffect(() => {
+        const unsubscribes = [];
         if (user) {
-            import('../services/db').then(async ({ initializeUser, subscribeToSubjects }) => {
+            import('../services/db').then(async ({ initializeUser, subscribeToSubjects, subscribeToExams, subscribeToRecentActivity }) => {
                 await initializeUser(user);
 
-                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
+                const unsubSubjects = subscribeToSubjects(user.uid, (data) => {
                     setSubjects(data);
                 });
-                const unsubscribeExams = subscribeToExams(user.uid, (data) => {
+                const unsubExams = subscribeToExams(user.uid, (data) => {
                     setExams(data);
                 });
-                const unsubscribeActivity = subscribeToRecentActivity(user.uid, 3, (data) => {
+                const unsubActivities = subscribeToRecentActivity(user.uid, 3, (data) => {
                     setRecentActivities(data);
                 });
-                return () => {
-                    unsubscribeSubjects();
-                    unsubscribeExams();
-                    unsubscribeActivity();
-                };
+                unsubscribes.push(unsubSubjects, unsubExams, unsubActivities);
             });
 
             // Initialize Google Calendar and check saved auth status
@@ -1102,20 +1106,24 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
 
                 if (savedAuthStatus && !currentAuthStatus) {
                     console.log('ℹ️ User previously authorized calendar, attempting silent refresh...');
-                    // Try to restore session silently with email hint
                     const refreshed = await refreshCalendarToken(user.email);
                     if (refreshed) {
                         currentAuthStatus = true;
                         console.log('✨ Session restored silently!');
                     } else {
-                        console.log('❌ Silent refresh failed, user needs to re-authorize');
+                        console.log('❌ Silent refresh failed');
                     }
                 }
 
-                setCalendarAuthorized(currentAuthStatus);
+                if (savedAuthStatus || currentAuthStatus) {
+                    setCalendarAuthorized(true);
+                }
                 console.log('📊 Calendar auth status:', currentAuthStatus ? 'Active' : savedAuthStatus ? 'Previously authorized' : 'Not authorized');
             });
         }
+        return () => {
+            unsubscribes.forEach(unsub => unsub && typeof unsub === 'function' && unsub());
+        };
     }, [user]);
 
     const handleAvatarSave = async (avatarId) => {
@@ -1202,17 +1210,60 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
             console.log("Cleaned Text Length:", cleanedTranscript.length);
             console.log("Cleaned Text Preview:", cleanedTranscript.slice(0, 100));
 
-            const structuredNotes = await generateNotes(cleanedTranscript, selectedSubject.name);
-            if (!structuredNotes) throw new Error("No notes returned from AI");
+            const result = await generateNotes(cleanedTranscript, selectedSubject.name);
+            if (!result || !result.notes) throw new Error("No notes returned from AI");
+
+            const structuredNotes = result.notes;
+
+            // Extract a title from the notes or use AI title
+            let extractedTitle = result.title || `Lecture ${lectures.length + 1}`;
+
+            if (!result.title) {
+                const lines = structuredNotes.split('\n');
+                const subjectLower = selectedSubject.name.toLowerCase().trim();
+
+                for (const line of lines) {
+                    const cleanLine = line.trim().replace(/^[\*\#\s\_]+|[\*\#\s\_]+$/g, '');
+                    if (!cleanLine || cleanLine.length < 3) continue;
+
+                    const cleanLower = cleanLine.toLowerCase();
+                    if (cleanLower === subjectLower ||
+                        cleanLower === `${subjectLower} notes` ||
+                        cleanLower === `about ${subjectLower}`) continue;
+
+                    const originalLine = line.trim();
+                    if (originalLine.startsWith('#') ||
+                        (originalLine.startsWith('**') && originalLine.endsWith('**')) ||
+                        originalLine.toLowerCase().startsWith('topic:') ||
+                        originalLine.toLowerCase().startsWith('title:')) {
+
+                        let crispTitle = cleanLine.replace(/^(topic|title):\s*/i, '');
+                        crispTitle = crispTitle.replace(/^(understanding|introduction to|basics of|intro to|lecture:|notes on|chapter:|about|overview of)\s+/i, '');
+                        crispTitle = crispTitle.split(/[\-\–\—\:]/)[0].trim();
+                        crispTitle = crispTitle.replace(/\s+(an introduction|basics|notes|overview|series|lecture)$/i, '');
+
+                        if (crispTitle.toLowerCase().includes(':')) {
+                            const parts = crispTitle.split(':');
+                            const firstPart = parts[0].toLowerCase().trim();
+                            if (firstPart === subjectLower || firstPart.includes('lecture') || firstPart.includes('notes')) {
+                                crispTitle = parts.slice(1).join(':').trim();
+                            }
+                        }
+
+                        const words = crispTitle.split(/\s+/).filter(w => w.length > 0);
+                        extractedTitle = words.slice(0, 2).join(' ').replace(/[\:\-\s]+$/, '').trim();
+                        break;
+                    }
+                }
+            }
 
             // 2. Save both raw and structured (or just structured)
-            // Storing structuredNotes as the main 'transcript' used for study
             const lectureData = {
                 title: extractedTitle,
-                transcript: structuredNotes, // Using AI generated notes
-                rawTranscript: rawText, // Keeping raw just in case
+                transcript: structuredNotes,
+                rawTranscript: rawText,
                 duration: 0,
-                summary: structuredNotes.replace ? structuredNotes.slice(0, 100) + '...' : 'No summary',
+                summary: structuredNotes.slice(0, 100) + '...',
                 type: 'Recording'
             };
 
@@ -1291,8 +1342,8 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
             const color = colors[Math.floor(Math.random() * colors.length)];
 
             try {
-                const { addSubject, logActivity } = await import('../services/db');
-                await addSubject(user.uid, newSubject, color);
+                const { addSubject: dbAddSubject, logActivity } = await import('../services/db');
+                await dbAddSubject(user.uid, newSubject, color);
                 await logActivity(user.uid, {
                     type: 'subject',
                     text: `Created subject: ${newSubject}`
@@ -1318,8 +1369,8 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                 };
 
                 // Add to database first
-                const { addExam, updateExamCalendarId, logActivity } = await import('../services/db');
-                const examId = await addExam(user.uid, examData);
+                const { addExam: dbAddExam, updateExamCalendarId, logActivity } = await import('../services/db');
+                const examId = await dbAddExam(user.uid, examData);
                 await logActivity(user.uid, {
                     type: 'exam',
                     text: `Scheduled exam for ${newExam.subjectName}`
@@ -1801,25 +1852,28 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                                             <Plus size={14} /> Add
                                         </button>
                                     </div>
-                                    {exams.length === 0 ? (
-                                        <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
-                                            <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
-                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No exams scheduled yet.</p>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                            {exams
-                                                .filter(exam => {
-                                                    // Only show upcoming exams (today and future)
-                                                    const examDate = new Date(exam.examDate);
-                                                    const today = new Date();
-                                                    examDate.setHours(0, 0, 0, 0);
-                                                    today.setHours(0, 0, 0, 0);
-                                                    return examDate >= today;
-                                                })
-                                                .slice(0, 5)
-                                                .map((exam) => {
-                                                    const examDate = new Date(exam.examDate);
+                                    {(() => {
+                                        const upcomingExams = exams.filter(exam => {
+                                            const examDate = parseLocalDate(exam.examDate);
+                                            const today = new Date();
+                                            examDate.setHours(0, 0, 0, 0);
+                                            today.setHours(0, 0, 0, 0);
+                                            return examDate >= today;
+                                        }).slice(0, 5);
+
+                                        if (upcomingExams.length === 0) {
+                                            return (
+                                                <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
+                                                    <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
+                                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No upcoming exams.</p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                {upcomingExams.map((exam) => {
+                                                    const examDate = parseLocalDate(exam.examDate);
                                                     const today = new Date();
                                                     const daysUntil = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
                                                     return (
@@ -1864,8 +1918,9 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                                                         </div>
                                                     );
                                                 })}
-                                        </div>
-                                    )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Recent Activity */}
