@@ -45,6 +45,7 @@ import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import { avatars } from './components/AvatarSelection';
+import LiquidEther from './components/LiquidEther';
 
 // --- Decorative Components ---
 
@@ -138,13 +139,15 @@ const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, 
                     </div>
                 )}
 
-                <button
-                    onClick={toggleTheme}
-                    className="btn-modern btn-glass"
-                    style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', justifyContent: 'center' }}
-                >
-                    {theme === 'dark' ? <Sun size={20} color="var(--google-yellow)" /> : <Moon size={20} color="var(--google-blue)" />}
-                </button>
+                {isDashboard && (
+                    <button
+                        onClick={toggleTheme}
+                        className="btn-modern btn-glass"
+                        style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', justifyContent: 'center' }}
+                    >
+                        {theme === 'dark' ? <Sun size={20} color="var(--google-yellow)" /> : <Moon size={20} color="var(--google-blue)" />}
+                    </button>
+                )}
 
                 {user ? (
                     <div className="user-profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -747,15 +750,33 @@ function App() {
     }
 
     return (
-        <div className="app-container">
-            <div className="bg-gradient-layer" />
-            <div className="ombre-glow glow-1" />
-            <div className="ombre-glow glow-2" />
-            <Navbar scrolled={scrolled} user={currentUser} userProfile={userProfile} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
-            <Hero onActionClick={handleActionClick} />
-            <PainPoints />
-            <Features />
-            <HowItWorks />
+        <div className="app-container landing-page" style={{ position: 'relative', background: '#000000', color: '#ffffff' }}>
+            <LiquidEther
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    zIndex: 0,
+                    pointerEvents: 'none'
+                }}
+                colors={['#1a73e8', '#4285f4', '#8ab4f8', '#1e88e5']}
+                autoDemo={true}
+                resolution={0.5}
+                autoSpeed={0.4}
+                mouseForce={30}
+            />
+            {/* <div className="bg-gradient-layer" style={{ zIndex: 1 }} /> */}
+            <div className="ombre-glow glow-1" style={{ zIndex: 1 }} />
+            <div className="ombre-glow glow-2" style={{ zIndex: 1 }} />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+                <Navbar scrolled={scrolled} user={currentUser} userProfile={userProfile} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
+                <Hero onActionClick={handleActionClick} />
+                <PainPoints />
+                <Features />
+                <HowItWorks />
+            </div>
 
             <footer className="footer-main">
                 <div className="container">
