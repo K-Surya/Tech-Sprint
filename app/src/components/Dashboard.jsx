@@ -1122,7 +1122,7 @@ const ProfileView = ({ onBack, user, userProfile, setUserProfile, setViewMode })
                         : 'Just now'}
             </p>
 
-            <div style={{ textAlign: 'left', marginTop: '3rem', padding: '2rem', background: 'white', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
+            <div style={{ textAlign: 'left', marginTop: '3rem', padding: '2rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                 <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Account Settings</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div>
@@ -1132,7 +1132,7 @@ const ProfileView = ({ onBack, user, userProfile, setUserProfile, setViewMode })
                                 type="text"
                                 defaultValue={userProfile?.nickname || user.displayName}
                                 id="nickname-input"
-                                style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: '#f8faff', color: 'var(--text-primary)' }}
+                                style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                             />
                             <button
                                 className="btn-modern btn-solid"
@@ -2062,8 +2062,8 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
 
                                         if (upcomingExams.length === 0) {
                                             return (
-                                                <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
-                                                    <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
+                                                <div style={{ padding: '2rem 1rem', border: '1px dashed var(--border-color)', borderRadius: '16px', textAlign: 'center' }}>
+                                                    <Calendar size={32} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
                                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No upcoming exams.</p>
                                                 </div>
                                             );
@@ -2080,9 +2080,9 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
                                                             key={exam.id}
                                                             style={{
                                                                 padding: '1rem',
-                                                                background: '#f8faff',
+                                                                background: 'var(--bg-secondary)',
                                                                 borderRadius: '12px',
-                                                                border: '1px solid #e1e7f0',
+                                                                border: '1px solid var(--border-color)',
                                                                 display: 'flex',
                                                                 justifyContent: 'space-between',
                                                                 alignItems: 'center'

@@ -112,7 +112,7 @@ const Hero = ({ onActionClick }) => (
     </section>
 );
 
-const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, toggleTheme, onMenuClick }) => (
+const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, toggleTheme, onMenuClick, onProfileClick }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
         <div className={isDashboard ? "" : "container"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: isDashboard ? '0 2rem' : '0 1.5rem', maxWidth: isDashboard ? '100%' : '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -151,7 +151,12 @@ const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, 
 
                 {user ? (
                     <div className="user-profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.4rem 1rem 0.4rem 0.5rem', borderRadius: '30px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>
+                        <div
+                            onClick={onProfileClick}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.4rem 1rem 0.4rem 0.5rem', borderRadius: '30px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
                             {userProfile?.avatar ? (
                                 <img
                                     src={avatars.find(a => a.id === userProfile.avatar)?.src || avatars[0].src}
@@ -730,6 +735,7 @@ function App() {
                     theme={theme}
                     toggleTheme={toggleTheme}
                     onMenuClick={() => setIsSidebarOpen(true)}
+                    onProfileClick={() => setViewMode('profile')}
                 />
                 <Dashboard
                     user={currentUser}
@@ -763,9 +769,14 @@ function App() {
                 }}
                 colors={['#1a73e8', '#4285f4', '#8ab4f8', '#1e88e5']}
                 autoDemo={true}
-                resolution={0.5}
-                autoSpeed={0.4}
+                resolution={0.6}
+                autoSpeed={1.0}
                 mouseForce={30}
+                autoIntensity={2.5}
+                isViscous={true}
+                viscous={15}
+                dt={0.02}
+                autoResumeDelay={500}
             />
             {/* <div className="bg-gradient-layer" style={{ zIndex: 1 }} /> */}
             <div className="ombre-glow glow-1" style={{ zIndex: 1 }} />

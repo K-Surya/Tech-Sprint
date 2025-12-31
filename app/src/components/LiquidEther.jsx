@@ -291,8 +291,8 @@ export default function LiquidEther({
                     return;
                 }
                 if (this.mouse.isHoverInside) {
-                    if (this.active) this.forceStop();
-                    return;
+                    // Allow auto to continue even if hovering, unless user is actively moving (handled by idle check)
+                    // Was: if (this.active) this.forceStop(); return;
                 }
                 if (!this.active) {
                     this.active = true;
