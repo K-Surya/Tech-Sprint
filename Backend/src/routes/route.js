@@ -40,7 +40,7 @@ router.post("/flashcards", async (req, res) => {
     }
 
     const flashcards = await generateFlashcards(summary);
-    res.json({flashcards});
+    res.json({ flashcards });
   } catch (err) {
     console.error("Flashcard error:", err.message);
     res.status(500).json({ error: "Failed to generate flashcards" });
@@ -49,7 +49,7 @@ router.post("/flashcards", async (req, res) => {
 
 router.post("/analyze", async (req, res) => {
   try {
-    const { subjectId, lectures } = req.body;
+    const { subjectId, lectures, examDate } = req.body;
 
     if (!subjectId || !lectures) {
       return res.status(400).json({ error: "subjectId and lectures are required" });
