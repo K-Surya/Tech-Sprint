@@ -2,8 +2,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_NOTES);
 
-async function generateNotes(transcript, subject) {
-  const model = genAI.getGenerativeModel({ model: "gemma-3-12b" });
+const generateNotes = async (transcript, subject) => {
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
 
   const prompt = `
     You are an academic assistant for college students.
@@ -23,6 +23,6 @@ async function generateNotes(transcript, subject) {
 
   const result = await model.generateContent(prompt);
   return result.response.text();
-}
+};
 
 export default generateNotes;

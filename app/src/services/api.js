@@ -8,7 +8,12 @@ export const generateNotes = async (transcript, subject) => {
             body: JSON.stringify({ transcript, subject }),
         });
 
-        if (!response.ok) throw new Error("Failed to generate notes");
+        if (!response.ok) {
+            if (response.status === 429) {
+                throw new Error("AI Rate Limit Exceeded: Please wait a moment before trying again.");
+            }
+            throw new Error(`Failed to generate notes: ${response.statusText}`);
+        }
 
         const data = await response.json();
         if (!data.notes) {
