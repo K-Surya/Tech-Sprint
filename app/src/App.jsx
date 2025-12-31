@@ -25,7 +25,9 @@ import {
     BookOpen,
     LogOut,
     User as UserIcon,
-    Layout
+    Layout,
+    Sun,
+    Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -35,14 +37,48 @@ import Dashboard from './components/Dashboard';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
+// --- Decorative Components ---
+const StarBackground = () => {
+    const stars = React.useMemo(() => {
+        console.log("Generating stars...");
+        return Array.from({ length: 100 }).map((_, i) => ({
+            id: i,
+            size: Math.random() * 4 + 1,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            duration: Math.random() * 15 + 10,
+            delay: Math.random() * 5
+        }));
+    }, []);
+
+    return (
+        <div className="star-container">
+            {stars.map(star => (
+                <div
+                    key={star.id}
+                    className="star"
+                    style={{
+                        width: star.size,
+                        height: star.size,
+                        left: star.left,
+                        top: star.top,
+                        animationDuration: `${star.duration}s`,
+                        animationDelay: `${star.delay}s`
+                    }}
+                />
+            ))}
+        </div>
+    );
+};
+
 // --- Components ---
 
-const Navbar = ({ scrolled, user, onAuthClick, isDashboard }) => (
+const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 1.5rem' }}>
             <div className="logo-section" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => window.scrollTo(0, 0)}>
                 <BookOpen className="logo-icon" size={28} />
-                <span className="logo-text google-font" style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1a73e8' }}>Benchmate AI</span>
+                <span className="logo-text google-font" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-blue)' }}>Benchmate AI</span>
             </div>
             <div className="nav-links">
                 {!isDashboard && (
@@ -51,6 +87,15 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard }) => (
                         <a href="#how-it-works" className="nav-link">How it Works</a>
                     </>
                 )}
+
+                <button
+                    onClick={toggleTheme}
+                    className="btn-modern btn-glass"
+                    style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', justifyContent: 'center' }}
+                >
+                    {theme === 'dark' ? <Sun size={20} color="var(--google-yellow)" /> : <Moon size={20} color="var(--google-blue)" />}
+                </button>
+
                 {user ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--google-blue-light)', padding: '0.4rem 1rem', borderRadius: '20px', color: 'var(--google-blue)', fontWeight: 600, fontSize: '0.85rem' }}>
@@ -275,6 +320,14 @@ function App() {
     const [showAuth, setShowAuth] = useState(false);
     const [user, setUser] = useState(null);
     const [demoUser, setDemoUser] = useState(null);
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
     const currentUser = user || demoUser;
 
@@ -313,13 +366,21 @@ function App() {
     };
 
     if (showAuth) {
-        return <Auth onBack={() => setShowAuth(false)} onDemoLogin={handleDemoLogin} />;
+        return (
+            <div className="app-container">
+                <div className="bg-gradient-layer" />
+                <StarBackground />
+                <Auth onBack={() => setShowAuth(false)} onDemoLogin={handleDemoLogin} />
+            </div>
+        );
     }
 
     if (currentUser) {
         return (
             <div className="app-container">
-                <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={true} />
+                <div className="bg-gradient-layer" />
+                <StarBackground />
+                <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={true} theme={theme} toggleTheme={toggleTheme} />
                 <Dashboard user={currentUser} onLogout={handleLogout} />
             </div>
         );
@@ -327,7 +388,9 @@ function App() {
 
     return (
         <div className="app-container">
-            <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={false} />
+            <div className="bg-gradient-layer" />
+            <StarBackground />
+            <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
             <Hero onActionClick={handleActionClick} />
             <PainPoints />
             <Features />
