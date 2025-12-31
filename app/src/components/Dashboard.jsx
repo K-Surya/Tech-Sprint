@@ -1660,30 +1660,7 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                             {/* Sidebar / Stats Area - Only visible on main dashboard */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-                                {/* Quick Stats */}
-                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
-                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Study Progress</h3>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <div style={{ background: 'var(--google-blue-light)', color: 'var(--google-blue)', padding: '0.75rem', borderRadius: '12px' }}>
-                                                <Clock size={20} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Listening Time</div>
-                                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>24.5 Hours</div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <div style={{ background: 'var(--google-green-light)', color: 'var(--google-green)', padding: '0.75rem', borderRadius: '12px' }}>
-                                                <TrendingUp size={20} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Efficiency Boost</div>
-                                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>+42% Result</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
 
                                 {/* Exam Timetable Widget */}
                                 <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
