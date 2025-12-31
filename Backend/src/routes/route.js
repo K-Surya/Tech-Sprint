@@ -8,27 +8,43 @@ import generateRoadmap from "../services/gemini-roadmap.js";
 const router = express.Router();
 
 router.post("/notes", async (req, res) => {
-  const { transcript, subject } = req.body;
+  try {
+    const { transcript, subject } = req.body;
 
-  if (!transcript) {
-    return res.status(400).json({ error: "Transcript required" });
+    if (!transcript) {
+      return res.status(400).json({ error: "Transcript required" });
+    }
+
+    const notes = await generateNotes(transcript, subject);
+    res.json({ notes });
+  } catch (error) {
+    console.error("Notes generation error:", error.message);
+    const status = error.status || error.statusCode || 500;
+    res.status(status).json({
+      error: "Failed to generate notes",
+      details: error.message
+    });
   }
-
-  const notes = await generateNotes(transcript, subject);
-
-  res.json({ notes });
 });
 
 router.post("/quiz", async (req, res) => {
-  const { summary, subject } = req.body;
+  try {
+    const { summary, subject } = req.body;
 
-  if (!summary) {
-    return res.status(400).json({ error: "Summary required" });
+    if (!summary) {
+      return res.status(400).json({ error: "Summary required" });
+    }
+
+    const quiz = await generateQuiz(subject, summary);
+    res.json({ quiz });
+  } catch (error) {
+    console.error("Quiz generation error:", error.message);
+    const status = error.status || error.statusCode || 500;
+    res.status(status).json({
+      error: "Failed to generate quiz",
+      details: error.message
+    });
   }
-
-  const quiz = await generateQuiz(subject, summary);
-
-  res.json({ quiz });
 });
 
 

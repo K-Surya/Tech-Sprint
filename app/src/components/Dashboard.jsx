@@ -1029,7 +1029,146 @@ const SubjectDetailView = ({
     );
 };
 
-const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile }) => {
+const SettingsView = ({ onBack, user, glassIntensity, setGlassIntensity }) => {
+    const [settings, setSettings] = useState({
+        aiModel: 'gemini-1.5-flash',
+        quality: 'high',
+        autoQuiz: true,
+        animations: true,
+        language: 'English'
+    });
+
+    const SettingRow = ({ icon: Icon, label, description, children }) => (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ padding: '0.75rem', background: 'var(--google-blue-light)', borderRadius: '12px', color: 'var(--google-blue)' }}>
+                    <Icon size={20} />
+                </div>
+                <div>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{label}</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{description}</p>
+                </div>
+            </div>
+            {children}
+        </div>
+    );
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ padding: '0.5rem', borderRadius: '12px' }}>
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="google-font" style={{ fontSize: '2rem', margin: 0 }}>Global Settings</h2>
+            </div>
+
+            <section style={{ marginBottom: '3rem' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--google-blue)' }}>AI & Intelligence</h3>
+                <SettingRow
+                    icon={Cpu}
+                    label="AI Model"
+                    description="Choose the engine powering your lecture analysis"
+                >
+                    <select
+                        value={settings.aiModel}
+                        onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
+                        style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    >
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Brainy)</option>
+                    </select>
+                </SettingRow>
+
+                <SettingRow
+                    icon={Sparkles}
+                    label="Auto-generate Quiz"
+                    description="Automatically create quizzes after every lecture"
+                >
+                    <input
+                        type="checkbox"
+                        checked={settings.autoQuiz}
+                        onChange={() => setSettings({ ...settings, autoQuiz: !settings.autoQuiz })}
+                        style={{ width: '20px', height: '20px', accentColor: 'var(--google-blue)' }}
+                    />
+                </SettingRow>
+            </section>
+
+            <SettingRow
+                icon={Volume2}
+                label="Glassmorphism Intensity"
+                description="Adjust the blur effect of the user interface"
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <input
+                        type="range"
+                        min="0" max="40"
+                        value={glassIntensity}
+                        onChange={(e) => setGlassIntensity(parseInt(e.target.value))}
+                        style={{ accentColor: 'var(--google-blue)', width: '150px' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, width: '40px', textAlign: 'right' }}>{glassIntensity}px</span>
+                </div>
+            </SettingRow>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button className="btn-modern btn-glass" style={{ padding: '0.8rem 2rem' }}>Reset Defaults</button>
+                <button
+                    className="btn-modern btn-solid"
+                    style={{ padding: '0.8rem 2rem' }}
+                    onClick={() => {
+                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                        onBack();
+                    }}
+                >
+                    Save Changes
+                </button>
+            </div>
+        </motion.div>
+    );
+};
+
+const ProfileView = ({ onBack, user }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            style={{ maxWidth: '600px', margin: '4rem auto', padding: '3rem', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', borderRadius: '32px', border: '1px solid var(--border-color)', textAlign: 'center' }}
+        >
+            <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 2rem' }}>
+                <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, var(--google-blue), var(--google-purple))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                    <UserIcon size={60} />
+                </div>
+                <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--google-green)', padding: '0.5rem', borderRadius: '50%', border: '4px solid var(--glass-bg)' }}>
+                    <CheckCircle2 size={16} color="white" />
+                </div>
+            </div>
+
+            <h2 className="google-font" style={{ fontSize: '2rem', margin: '0 0 0.5rem' }}>{user.displayName || user.email?.split('@')[0]}</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{user.email}</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '20px' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-blue)' }}>12</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Lectures</div>
+                </div>
+                <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '20px' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-green)' }}>85%</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Avg Score</div>
+                </div>
+            </div>
+
+            <button onClick={onBack} className="btn-modern btn-solid" style={{ width: '100%', padding: '1rem' }}>Return to Dashboard</button>
+        </motion.div>
+    );
+};
+
+const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
@@ -1041,20 +1180,8 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
     const [calendarInitialized, setCalendarInitialized] = useState(false);
 
     // Navigation State
-    const [selectedSubject, setSelectedSubject] = useState(null);
     const [selectedLecture, setSelectedLecture] = useState(null);
-    const [viewMode, setViewMode] = useState('subject'); // 'subject', 'lecture', 'flashcards'
 
-    // Handle Profile Request
-    useEffect(() => {
-        if (profileRequest > 0) {
-            setSelectedSubject(null);
-            setSelectedLecture(null);
-            setViewMode('profile');
-        }
-    }, [profileRequest]);
-
-    const [subjects, setSubjects] = useState([]);
     const [lectures, setLectures] = useState([]);
     const [recentActivities, setRecentActivities] = useState([]);
     const [newSubject, setNewSubject] = useState('');
@@ -1063,57 +1190,16 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
     const fileInputRef = useRef(null);
     const timetableRef = useRef(null);
 
-    // Initial User Setup & Data Fetching
-    // Initial User Setup & Data Fetching
-    // userProfile is passed from App.jsx
+    // Reset lecture when subject changes
+    useEffect(() => {
+        setSelectedLecture(null);
+    }, [selectedSubject]);
 
-
+    // Initial User Setup
     useEffect(() => {
         if (user) {
-            import('../services/db').then(async ({ initializeUser, subscribeToSubjects }) => {
-                await initializeUser(user);
-
-                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
-                    setSubjects(data);
-                });
-                const unsubscribeExams = subscribeToExams(user.uid, (data) => {
-                    setExams(data);
-                });
-                const unsubscribeActivity = subscribeToRecentActivity(user.uid, 3, (data) => {
-                    setRecentActivities(data);
-                });
-                return () => {
-                    unsubscribeSubjects();
-                    unsubscribeExams();
-                    unsubscribeActivity();
-                };
-            });
-
-            // Initialize Google Calendar and check saved auth status
-            import('../services/calendar').then(async ({ initializeGoogleCalendar, isCalendarAuthorized, refreshCalendarToken }) => {
-                const { getCalendarAuthStatus } = await import('../services/db');
-
-                await initializeGoogleCalendar();
-                setCalendarInitialized(true);
-
-                // Check if user previously authorized calendar
-                const savedAuthStatus = await getCalendarAuthStatus(user.uid);
-                let currentAuthStatus = isCalendarAuthorized();
-
-                if (savedAuthStatus && !currentAuthStatus) {
-                    console.log('ℹ️ User previously authorized calendar, attempting silent refresh...');
-                    // Try to restore session silently with email hint
-                    const refreshed = await refreshCalendarToken(user.email);
-                    if (refreshed) {
-                        currentAuthStatus = true;
-                        console.log('✨ Session restored silently!');
-                    } else {
-                        console.log('❌ Silent refresh failed, user needs to re-authorize');
-                    }
-                }
-
-                setCalendarAuthorized(currentAuthStatus);
-                console.log('📊 Calendar auth status:', currentAuthStatus ? 'Active' : savedAuthStatus ? 'Previously authorized' : 'Not authorized');
+            import('../services/db').then(({ initializeUser }) => {
+                initializeUser(user);
             });
         }
     }, [user]);
@@ -1542,9 +1628,9 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
         <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent' }}>
             <div className="container" style={{ padding: '2rem 1rem' }}>
 
-                {/* Dashboard Header - Show only if no subject selected AND not in profile mode */}
+                {/* Dashboard Header - Show only if on main overview (no subject selected and not in settings/profile) */}
                 {!selectedSubject && viewMode === 'subject' && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
                         <div>
                             <motion.h1
                                 initial={{ opacity: 0, y: -20 }}
@@ -1597,113 +1683,21 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                             generateAndSaveQuiz={generateAndSaveQuiz}
                             userId={user.uid}
                             subjectId={selectedSubject.id}
-                            removeLecture={removeLecture}
+                        />
+                    ) : viewMode === 'settings' ? (
+                        <SettingsView
+                            key="settings"
+                            onBack={() => setViewMode('subject')}
+                            user={user}
+                            glassIntensity={glassIntensity}
+                            setGlassIntensity={setGlassIntensity}
                         />
                     ) : viewMode === 'profile' ? (
-                        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-                                <button onClick={() => setViewMode('subject')} className="btn-modern btn-glass" style={{ marginRight: '1rem' }}>
-                                    <ArrowLeft size={20} />
-                                </button>
-                                <h2 className="google-font" style={{ margin: 0 }}>My Profile</h2>
-                            </div>
-
-                            <div className="lab-card" style={{ background: 'white', padding: '2.5rem', borderRadius: '24px' }}>
-                                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                                    <div style={{ width: '120px', height: '120px', margin: '0 auto 1.5rem auto', position: 'relative' }}>
-                                        <img
-                                            src={(avatars && avatars.find(a => a.id === userProfile?.avatar)?.src) || (avatars && avatars[0]?.src) || 'https://via.placeholder.com/150'}
-                                            alt="Profile"
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                        />
-                                        <button
-                                            onClick={() => setViewMode('select-avatar')}
-                                            style={{
-                                                position: 'absolute',
-                                                bottom: 0,
-                                                right: 0,
-                                                background: 'var(--google-blue)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '50%',
-                                                width: '36px',
-                                                height: '36px',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                                            }}
-                                        >
-                                            <RefreshCw size={16} />
-                                        </button>
-                                    </div>
-                                    <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{userProfile?.nickname || user.displayName}</h3>
-                                    <p style={{ color: 'var(--text-secondary)' }}>{user.email}</p>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                                        Joined: {userProfile?.joinedAt?.seconds
-                                            ? new Date(userProfile.joinedAt.seconds * 1000).toLocaleDateString()
-                                            : user.metadata?.creationTime
-                                                ? new Date(user.metadata.creationTime).toLocaleDateString()
-                                                : 'Just now'}
-                                    </p>
-                                </div>
-
-                                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
-                                    <h4 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Account Settings</h4>
-                                    <div style={{ display: 'grid', gap: '1rem' }}>
-                                        <div className="input-group">
-                                            <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Nickname</label>
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <input
-                                                    type="text"
-                                                    defaultValue={userProfile?.nickname || user.displayName}
-                                                    id="nickname-input"
-                                                    style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: '#fff', color: 'var(--text-primary)' }}
-                                                />
-                                                <button
-                                                    className="btn-modern btn-solid"
-                                                    onClick={async () => {
-                                                        const newNickname = document.getElementById('nickname-input').value;
-                                                        if (newNickname.trim()) {
-                                                            try {
-                                                                const { updateUserProfile } = await import('../services/db');
-                                                                await updateUserProfile(user.uid, { nickname: newNickname });
-                                                                // Optimistic update if needed, but subscription handles it
-                                                                alert("Nickname updated!");
-                                                            } catch (e) {
-                                                                console.error("Error updating nickname:", e);
-                                                                alert("Failed to update nickname.");
-                                                            }
-                                                        }
-                                                    }}
-                                                >
-                                                    Save
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : viewMode === 'select-avatar' ? (
-                        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-                                <button onClick={() => setViewMode('profile')} className="btn-modern btn-glass" style={{ marginRight: '1rem' }}>
-                                    <ArrowLeft size={20} />
-                                </button>
-                                <h2 className="google-font" style={{ margin: 0 }}>Change Avatar</h2>
-                            </div>
-                            <div className="lab-card" style={{ background: 'white', borderRadius: '24px', padding: '1rem' }}>
-                                <AvatarSelection
-                                    onSelect={async (id) => {
-                                        await handleAvatarSave(id);
-                                        setViewMode('profile');
-                                    }}
-                                    initialAvatar={userProfile?.avatar}
-                                />
-                            </div>
-                        </div>
+                        <ProfileView
+                            key="profile"
+                            onBack={() => setViewMode('subject')}
+                            user={user}
+                        />
                     ) : selectedSubject ? (
                         <SubjectDetailView
                             key="subject"
