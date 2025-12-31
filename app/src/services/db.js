@@ -95,6 +95,14 @@ export const deleteSubject = async (userId, subjectId) => {
     await deleteDoc(subjectRef);
 };
 
+export const saveSubjectRoadmap = async (userId, subjectId, roadmap) => {
+    const subjectRef = doc(db, 'users', userId, 'subjects', subjectId);
+    await updateDoc(subjectRef, {
+        roadmap: roadmap,
+        roadmapGeneratedAt: serverTimestamp()
+    });
+};
+
 // --- Lectures ---
 export const addLecture = async (userId, subjectId, lectureData) => {
     const lecturesRef = collection(db, 'users', userId, 'subjects', subjectId, 'lectures');

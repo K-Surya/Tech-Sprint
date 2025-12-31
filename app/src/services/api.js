@@ -1,4 +1,6 @@
-const BASE_URL = "https://tech-sprint-qn15.onrender.com/benchmate";
+const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? "http://localhost:5000/benchmate"
+    : "https://tech-sprint-qn15.onrender.com/benchmate";
 
 export const generateNotes = async (transcript, subject) => {
     try {
@@ -138,6 +140,24 @@ export const generateFlashcards = async (lectureContent, subject) => {
         return flashcardsResult;
     } catch (error) {
         console.error("API generateFlashcards error:", error);
+        throw error;
+    }
+};
+
+export const generateRoadmap = async (subject, examDate, topics = []) => {
+    try {
+        const response = await fetch(`${BASE_URL}/roadmap`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subject, examDate, topics }),
+        });
+
+        if (!response.ok) throw new Error("Failed to generate roadmap");
+
+        const data = await response.json();
+        return data.roadmap;
+    } catch (error) {
+        console.error("API generateRoadmap error:", error);
         throw error;
     }
 };

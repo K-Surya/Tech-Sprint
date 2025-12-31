@@ -801,13 +801,26 @@ const SubjectDetailView = ({
     saveLectureToDB,
     lectures,
     setSelectedLecture,
-    setViewMode,
     timetableRef,
     exams,
     removeLecture,
-    removeSubject
+    removeSubject,
+    setShowExamModal,
+    setNewExam,
+    generateAndSaveRoadmap
 }) => {
-    const subjectExams = exams.filter(e => e.subjectName === selectedSubject.name);
+    const [generatingRoadmap, setGeneratingRoadmap] = useState(false);
+    const subjectExams = exams.filter(e => {
+        const match = e.subjectName?.trim().toLowerCase() === selectedSubject.name?.trim().toLowerCase();
+        if (!match) return false;
+
+        // Only show upcoming exams
+        const examDate = new Date(e.examDate);
+        const today = new Date();
+        examDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return examDate >= today;
+    });
 
     return (
         <motion.div
@@ -901,8 +914,20 @@ const SubjectDetailView = ({
 
                 {/* Sidebar */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                        <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Next Exam</h3>
+                    <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 className="google-font" style={{ fontSize: '1.1rem', margin: 0 }}>Next Exam</h3>
+                            <button
+                                className="btn-modern btn-glass"
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                onClick={() => {
+                                    setNewExam(prev => ({ ...prev, subjectName: selectedSubject.name }));
+                                    setShowExamModal(true);
+                                }}
+                            >
+                                <Plus size={14} /> Add
+                            </button>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {subjectExams.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -937,6 +962,66 @@ const SubjectDetailView = ({
                                 ))
                             )}
                         </div>
+
+                        {selectedSubject.roadmap ? (
+                            <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+                                <h4 className="google-font" style={{ fontSize: '0.95rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Sparkles size={16} color="var(--google-blue)" /> Your Study Roadmap
+                                </h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {selectedSubject.roadmap.map((phase, idx) => (
+                                        <div key={idx} style={{
+                                            padding: '1rem',
+                                            background: 'var(--bg-secondary)',
+                                            borderRadius: '12px',
+                                            borderLeft: `4px solid ${['#4285F4', '#34A853', '#FBBC05', '#EA4335'][idx % 4]}`
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.3rem', opacity: 0.8 }}>
+                                                <span>{phase.phaseName}</span>
+                                                <span>{phase.duration}</span>
+                                            </div>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem' }}>{phase.focus}</div>
+                                            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                {phase.tasks.slice(0, 2).map((t, i) => <li key={i}>{t}</li>)}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    className="btn-modern btn-glass"
+                                    style={{ marginTop: '1rem', width: '100%', fontSize: '0.8rem', padding: '0.6rem' }}
+                                    onClick={async () => {
+                                        setGeneratingRoadmap(true);
+                                        await generateAndSaveRoadmap();
+                                        setGeneratingRoadmap(false);
+                                    }}
+                                    disabled={generatingRoadmap}
+                                >
+                                    {generatingRoadmap ? (
+                                        <><Loader2 size={14} className="animate-spin" /> Regenerating...</>
+                                    ) : (
+                                        'Regenerate Roadmap'
+                                    )}
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                className="btn-modern btn-solid"
+                                style={{ marginTop: '1.5rem', width: '100%', fontSize: '0.9rem', padding: '0.8rem' }}
+                                onClick={async () => {
+                                    setGeneratingRoadmap(true);
+                                    await generateAndSaveRoadmap();
+                                    setGeneratingRoadmap(false);
+                                }}
+                                disabled={generatingRoadmap}
+                            >
+                                {generatingRoadmap ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
+                                ) : (
+                                    <><Sparkles size={16} /> Generate Study Roadmap</>
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1228,7 +1313,7 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                 console.log('📊 Calendar status:', { authorized: calendarAuthorized, syncRequested: newExam.syncToCalendar });
 
                 const examData = {
-                    subjectName: newExam.subjectName,
+                    subjectName: newExam.subjectName.trim(),
                     examDate: newExam.examDate
                 };
 
@@ -1269,7 +1354,6 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                         }
                         alert("Exam added but failed to sync to Google Calendar. Error: " + (calError.message || 'Unknown error'));
                     }
-                } else {
                     console.log('ℹ️ Skipping calendar sync:', !newExam.syncToCalendar ? 'Not requested' : 'Not authorized');
                 }
 
@@ -1279,6 +1363,34 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                 console.error("❌ Error adding exam:", error);
                 alert("Failed to add exam. Check console for details.");
             }
+        }
+    };
+
+    const generateAndSaveRoadmap = async () => {
+        if (!user || !selectedSubject) return;
+
+        try {
+            const { generateRoadmap } = await import('../services/api');
+            const { saveSubjectRoadmap, logActivity } = await import('../services/db');
+
+            // Get next exam if it exists
+            const subjectExams = exams.filter(e => e.subjectName?.trim().toLowerCase() === selectedSubject.name?.trim().toLowerCase());
+            const nextExam = subjectExams[0];
+            const examDate = nextExam ? nextExam.examDate : null;
+
+            // Get lecture titles as topics
+            const topics = lectures.map(l => l.title);
+
+            const roadmapResult = await generateRoadmap(selectedSubject.name, examDate, topics);
+            await saveSubjectRoadmap(user.uid, selectedSubject.id, roadmapResult);
+            await logActivity(user.uid, {
+                type: 'roadmap',
+                text: `Generated study roadmap for ${selectedSubject.name}`
+            });
+            console.log("✅ Roadmap saved!");
+        } catch (error) {
+            console.error("❌ Roadmap error:", error);
+            alert("Roadmap generation failed. Please ensure your local backend is running on port 5000 and has a valid Gemini API key.");
         }
     };
 
@@ -1366,6 +1478,15 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
             }
         }
     }, [lectures]);
+
+    useEffect(() => {
+        if (selectedSubject) {
+            const updatedSubject = subjects.find(s => s.id === selectedSubject.id);
+            if (updatedSubject) {
+                setSelectedSubject(updatedSubject);
+            }
+        }
+    }, [subjects]);
 
 
     const generateAndSaveQuiz = async () => {
@@ -1597,6 +1718,9 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                             exams={exams}
                             removeLecture={removeLecture}
                             removeSubject={removeSubject}
+                            setShowExamModal={setShowExamModal}
+                            setNewExam={setNewExam}
+                            generateAndSaveRoadmap={generateAndSaveRoadmap}
                         />
                     ) : (
                         <div className="dashboard-grid">
@@ -1663,13 +1787,16 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
 
 
                                 {/* Exam Timetable Widget */}
-                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                                         <h3 className="google-font" style={{ fontSize: '1.1rem', margin: 0 }}>Exam Timetable</h3>
                                         <button
                                             className="btn-modern btn-glass"
                                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
-                                            onClick={() => setShowExamModal(true)}
+                                            onClick={() => {
+                                                setNewExam(prev => ({ ...prev, subjectName: '' }));
+                                                setShowExamModal(true);
+                                            }}
                                         >
                                             <Plus size={14} /> Add
                                         </button>
@@ -1775,16 +1902,24 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }}>
                         <motion.div
                             className="lab-card"
-                            style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}
+                            style={{ width: '100%', maxWidth: '400px', padding: '2rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)' }}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                         >
-                            <h3 className="google-font" style={{ marginBottom: '1.5rem' }}>Add New Subject</h3>
+                            <h3 className="google-font" style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Add New Subject</h3>
                             <input
                                 type="text"
                                 placeholder="Subject Name (e.g. Physics)"
-                                style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}
+                                style={{
+                                    width: '100%',
+                                    padding: '1rem',
+                                    borderRadius: '12px',
+                                    border: '1px solid var(--border-color)',
+                                    marginBottom: '1.5rem',
+                                    background: 'var(--bg-secondary)',
+                                    color: 'var(--text-primary)'
+                                }}
                                 value={newSubject}
                                 onChange={(e) => setNewSubject(e.target.value)}
                                 autoFocus
@@ -1804,13 +1939,13 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }} onClick={() => setShowExamModal(false)}>
                         <motion.div
                             className="lab-card"
-                            style={{ width: '100%', maxWidth: '400px', padding: '2rem', background: 'white' }}
+                            style={{ width: '100%', maxWidth: '400px', padding: '2rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)' }}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <h3 className="google-font" style={{ marginBottom: '1.5rem' }}>Add Exam</h3>
+                            <h3 className="google-font" style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Add Exam</h3>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Subject</label>
                                 <select
@@ -1820,9 +1955,10 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                                         width: '100%',
                                         padding: '1rem',
                                         borderRadius: '12px',
-                                        border: '1px solid #e2e8f0',
+                                        border: '1px solid var(--border-color)',
                                         fontSize: '1rem',
-                                        background: 'white'
+                                        background: 'var(--bg-secondary)',
+                                        color: 'var(--text-primary)'
                                     }}
                                 >
                                     <option value="">Select a subject</option>
@@ -1841,8 +1977,11 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                                         width: '100%',
                                         padding: '1rem',
                                         borderRadius: '12px',
-                                        border: '1px solid #e2e8f0',
-                                        fontSize: '1rem'
+                                        border: '1px solid var(--border-color)',
+                                        fontSize: '1rem',
+                                        background: 'var(--bg-secondary)',
+                                        color: 'var(--text-primary)',
+                                        colorScheme: 'light dark'
                                     }}
                                 />
                             </div>
@@ -1851,9 +1990,9 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
                             <div style={{
                                 marginBottom: '1.5rem',
                                 padding: '1rem',
-                                background: '#f8faff',
+                                background: 'var(--bg-secondary)',
                                 borderRadius: '12px',
-                                border: '1px solid #e1e7f0'
+                                border: '1px solid var(--border-color)'
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <label style={{
