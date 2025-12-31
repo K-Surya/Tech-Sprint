@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_QUIZ);
 
 async function generateQuiz(subject, summary) {
   const model = genAI.getGenerativeModel({
-    model: "gemma-7b",
+    model: "gemma-3-12b",
     generationConfig: {
       responseMimeType: "application/json",
     }

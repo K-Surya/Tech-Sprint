@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_NOTES);
 
 async function generateNotes(transcript, subject) {
-  const model = genAI.getGenerativeModel({ model: "gemma-7b" });
+  const model = genAI.getGenerativeModel({ model: "gemma-3-12b" });
 
   const prompt = `
     You are an academic assistant for college students.

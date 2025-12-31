@@ -27,7 +27,11 @@ import {
     User as UserIcon,
     Layout,
     Sun,
-    Moon
+    Moon,
+    FileText,
+    BrainCircuit,
+    TrendingUp,
+    Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -72,6 +76,72 @@ const StarBackground = () => {
 };
 
 // --- Components ---
+
+
+const Hero = ({ onActionClick }) => (
+    <section className="hero">
+        <div className="container">
+            <div className="hero-bg-shapes">
+                <div className="shape shape-1" />
+                <div className="shape shape-2" />
+            </div>
+
+            <motion.div
+                className="hero-content"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+            >
+                <div className="hero-badge">
+                    <Sparkles size={16} />
+                    <span>AI-Powered Learning Companion</span>
+                </div>
+
+                <h1 className="hero-title">
+                    From Lecture Noise to <br />
+                    <span className="text-gradient">Learning Gold</span>
+                </h1>
+
+                <p className="hero-description">
+                    Turn messy lecture audio into crystal-clear, exam-ready content — instantly.
+                    Benchmate AI listens, filters the chaos, and delivers clean notes you can actually study from.
+                </p>
+
+                <div className="hero-btns">
+                    <button
+                        onClick={() => onActionClick('record')}
+                        className="btn-modern btn-solid"
+                        style={{ padding: '0.8rem 2rem', fontSize: '1rem' }}
+                    >
+                        <Mic size={20} style={{ marginRight: '0.5rem' }} />
+                        Start Free Recording
+                    </button>
+                    <button
+                        onClick={() => onActionClick('upload')}
+                        className="btn-modern btn-glass"
+                        style={{ padding: '0.8rem 2rem', fontSize: '1rem' }}
+                    >
+                        <Upload size={20} style={{ marginRight: '0.5rem' }} />
+                        Upload Audio File
+                    </button>
+                </div>
+
+                <div style={{ marginTop: '3rem', display: 'flex', gap: '2rem' }}>
+                    {[
+                        { label: '98%', sub: 'Accuracy' },
+                        { label: '5s', sub: 'Processing' },
+                        { label: 'Saved', sub: 'Summaries' }
+                    ].map((stat, i) => (
+                        <div key={i}>
+                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--google-blue)' }}>{stat.label}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{stat.sub}</div>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
+        </div>
+    </section>
+);
 
 const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
@@ -124,87 +194,19 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }
     </nav>
 );
 
-const Hero = ({ onActionClick }) => (
-    <section className="hero">
-        <div className="hero-bg-shapes">
-            <div className="shape shape-1 anim-float"></div>
-            <div className="shape shape-2 anim-float" style={{ animationDelay: '2s' }}></div>
-        </div>
-        <div className="container">
-            <div className="hero-content">
-                <motion.div
-                    className="hero-badge"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <Sparkles size={16} /> Powered by Google AI
-                </motion.div>
-
-                <motion.h1
-                    className="hero-title"
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                >
-                    From Lecture Noise to <span className="text-gradient">Learning Gold</span>
-                </motion.h1>
-
-                <motion.p
-                    className="hero-description"
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                >
-                    Turn messy lecture audio into crystal-clear, exam-ready content — instantly.
-                    Benchmate AI listens, filters the chaos, and delivers clean notes you can actually study from.
-                </motion.p>
-
-                <motion.div
-                    className="hero-btns"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                >
-                    <button onClick={onActionClick} className="btn-modern btn-solid">
-                        <Mic size={20} /> Start Recording
-                    </button>
-                    <button onClick={onActionClick} className="btn-modern btn-glass">
-                        <Upload size={20} /> Upload Audio
-                    </button>
-                </motion.div>
-
-                <motion.div
-                    className="hero-tags"
-                    style={{ marginTop: '2.5rem', display: 'flex', gap: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-green)' }}></div> Built for campus life
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--google-blue)' }}></div> Exam-ready notes
-                    </span>
-                </motion.div>
-            </div>
-        </div>
-    </section>
-);
 
 const PainPoints = () => (
     <section className="pain-points section-padding">
         <div className="container">
-            <h2 className="section-title">You Attend lectures. You Record them.</h2>
-            <p className="section-subtitle">And then? The "Last-Minute Panic" kicks in. Benchmate AI was built for the student life reality.</p>
+            <h2 className="section-title">The "Last-Minute" Panic is Real.</h2>
+            <p className="section-subtitle">You record the lectures. But you never actually listen to them. We fix that.</p>
 
             <div className="pain-grid">
                 {[
-                    { icon: <Clock />, title: "No time before exams", text: "Listening to 40 hours of audio is impossible during finals week." },
-                    { icon: <AlertCircle />, title: "Audio is messy & long", text: "Background noise, long silences, and off-topic jokes hide the actual content." },
-                    { icon: <Trash2 />, title: "You never listen again", text: "Most recorded lectures sit in a folder and are eventually deleted." },
-                    { icon: <Search />, title: "Knowledge gets lost", text: "Important definitions and formulas are buried in hours of chatter." }
+                    { icon: <Clock />, title: "Finals Week Chaos", text: "40 hours of audio. 1 night left. It's impossible." },
+                    { icon: <AlertCircle />, title: "Filtered Content", text: "Endless chatter & noise, zero actual notes." },
+                    { icon: <Trash2 />, title: "Digital Graveyard", text: "Audio files that sit in folders until deleted." },
+                    { icon: <Search />, title: "Hidden Knowledge", text: "The exam answer is buried in hour 4." }
                 ].map((item, i) => (
                     <motion.div
                         key={i}
@@ -215,8 +217,8 @@ const PainPoints = () => (
                         transition={{ delay: i * 0.1 }}
                     >
                         <div className="pain-icon-wrapper">{item.icon}</div>
-                        <h3 style={{ marginBottom: '0.75rem' }}>{item.title}</h3>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{item.text}</p>
+                        <h3 style={{ marginBottom: '0.75rem', fontSize: '1.25rem' }}>{item.title}</h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>{item.text}</p>
                     </motion.div>
                 ))}
             </div>
@@ -224,94 +226,180 @@ const PainPoints = () => (
     </section>
 );
 
-const Features = () => (
-    <section id="features" className="features section-padding">
-        <div className="container">
-            <h2 className="section-title">Built for Real Student Power</h2>
-            <p className="section-subtitle">Features that actually matter when you're sleep-deprived and studying at 3 AM.</p>
+const Features = () => {
+    const featureList = [
+        {
+            icon: <Volume2 />,
+            title: "AI Audio Transcription",
+            desc: "Crystal-clear conversion of lectures to text. Our AI filters background noise and off-topic chatter.",
+            color: "var(--google-blue)"
+        },
+        {
+            icon: <FileText />,
+            title: "Structured Study Notes",
+            desc: "Automatically turns raw transcripts into organized paragraphs, bullet points, and academic summaries.",
+            color: "var(--google-green)"
+        },
+        {
+            icon: <BrainCircuit />,
+            title: "Smart Flashcards",
+            desc: "Generate active recall study decks instantly from your lecture content. Perfect for quick revision.",
+            color: "var(--google-yellow)"
+        },
+        {
+            icon: <Sparkles />,
+            title: "AI-Powered Quizzes",
+            desc: "Test your understanding with auto-generated quizzes and detailed explanations for every answer.",
+            color: "var(--google-red)"
+        },
+        {
+            icon: <Clipboard />,
+            title: "Content Importer",
+            desc: "Not just for audio! Paste textbook chapters or raw notes to get the same AI-powered summaries.",
+            color: "var(--google-blue)"
+        },
+        {
+            icon: <TrendingUp />,
+            title: "Progress Tracking",
+            desc: "Monitor your quiz scores and study consistency across different subjects in one dashboard.",
+            color: "var(--google-green)"
+        }
+    ];
 
-            <div className="feature-grid">
-                <div className="feature-card" style={{ gridColumn: 'span 2' }}>
-                    <div style={{ width: 44, height: 44, borderRadius: '12px', background: 'var(--google-blue-light)', color: 'var(--google-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                        <Volume2 />
-                    </div>
-                    <h3>Noise-Aware AI Processing</h3>
-                    <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                        Our filters cut out background chatter, long pauses, and off-topic discussions. You get 100% meaningful academic content.
-                    </p>
-                </div>
+    return (
+        <section id="features" className="features section-padding">
+            <div className="container">
+                <h2 className="section-title">Everything You Need to Ace Your Exams</h2>
+                <p className="section-subtitle">A complete AI-powered study ecosystem built directly for student success.</p>
 
-                <div className="feature-card">
-                    <Zap style={{ color: 'var(--google-yellow)', marginBottom: '1.5rem' }} />
-                    <h3>Important Points Highlighting</h3>
-                    <p style={{ color: 'var(--text-secondary)' }}>AI automatically highlights definitions and exam-important phrases.</p>
-                </div>
-
-                <div className="feature-card">
-                    <BookOpen style={{ color: 'var(--google-green)', marginBottom: '1.5rem' }} />
-                    <h3>Structured Notes</h3>
-                    <p style={{ color: 'var(--text-secondary)' }}>Turns raw speech into clear paragraphs and properly formatted academic text.</p>
-                </div>
-
-                <div className="feature-card" style={{ gridColumn: 'span 2' }}>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <Wifi style={{ color: 'var(--google-blue)' }} />
-                        <h3 style={{ margin: 0 }}>Student-Friendly Design</h3>
-                    </div>
-                    <p style={{ color: 'var(--text-secondary)' }}>
-                        Lightweight UI and fast load times. Works perfectly on unpredictable campus Wi-Fi and mobile data.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-);
-
-const HowItWorks = () => (
-    <section id="how-it-works" className="how-it-works section-padding">
-        <div className="container">
-            <h2 className="section-title" style={{ color: 'white' }}>How It Works</h2>
-            <p className="section-subtitle" style={{ color: 'rgba(255,255,255,0.6)' }}>Zero learning curve. Just results.</p>
-
-            <div className="step-flow">
-                {[
-                    { icon: <Mic />, title: "Record / Upload", text: "Start live recording or pick a file." },
-                    { icon: <Cpu />, title: "AI Filters & Transcribes", text: "Google AI cleans & converts audio." },
-                    { icon: <CheckCircle2 />, title: "Study-Ready Text", text: "Get structured, clean notes instantly." }
-                ].map((step, i) => (
-                    <div className="step" key={i}>
-                        <div className="step-icon">{step.icon}</div>
-                        <h4>{step.title}</h4>
-                        <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem', fontSize: '0.9rem' }}>{step.text}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </section>
-);
-
-const Roadmap = () => (
-    <section className="section-padding" style={{ background: '#ffffff' }}>
-        <div className="container">
-            <div className="glass-card" style={{ padding: '3rem', borderRadius: '32px', background: 'var(--grad-hero)', border: 'none' }}>
-                <h2 className="section-title" style={{ textAlign: 'left' }}>What's Next? 🌱</h2>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Benchmate AI is just getting started. Here's what's coming soon to help you ace your exams.</p>
-                <div className="feature-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                    {[
-                        "Flashcards from lectures",
-                        "AI Quizzes before exams",
-                        "Multi-language support",
-                        "Exam summaries"
-                    ].map((item, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, color: 'var(--google-blue)' }}>
-                            <ArrowRight size={18} /> {item}
-                        </div>
+                <div className="feature-grid">
+                    {featureList.map((f, i) => (
+                        <motion.div
+                            key={i}
+                            className="feature-card"
+                            whileHover={{ y: -10, scale: 1.02 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: i * 0.1 }}
+                        >
+                            <div className="feature-icon-wrapper" style={{ color: f.color }}>
+                                {f.icon}
+                            </div>
+                            <h3>{f.title}</h3>
+                            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{f.desc}</p>
+                        </motion.div>
                     ))}
                 </div>
             </div>
-        </div>
-    </section>
-);
+        </section>
+    );
+};
+
+const HowItWorks = () => {
+    const steps = [
+        { icon: <Mic />, title: "Record / Upload", text: "Start live recording or pick a file." },
+        { icon: <Cpu />, title: "AI Filters & Transcribes", text: "Google AI cleans & converts audio." },
+        { icon: <CheckCircle2 />, title: "Study-Ready Text", text: "Get structured, clean notes instantly." }
+    ];
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.4
+            }
+        }
+    };
+
+    const stepVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                stiffness: 100,
+                damping: 12
+            }
+        }
+    };
+
+    const lineVariants = {
+        hidden: { scaleX: 0, originX: 0 },
+        visible: {
+            scaleX: 1,
+            transition: {
+                duration: 1.5,
+                ease: "easeInOut",
+                delay: 0.2
+            }
+        }
+    };
+
+    return (
+        <section id="how-it-works" className="how-it-works section-padding">
+            <div className="how-it-works-bg-glow" />
+            <div className="container">
+                <motion.h2
+                    className="section-title"
+                    style={{ color: 'white' }}
+                    initial={{ opacity: 0, y: -20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                >
+                    How It Works
+                </motion.h2>
+                <motion.p
+                    className="section-subtitle"
+                    style={{ color: 'rgba(255,255,255,0.6)' }}
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                >
+                    Zero learning curve. Just results.
+                </motion.p>
+
+                <motion.div
+                    className="step-flow"
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-100px" }}
+                >
+                    <div className="flow-line-bg">
+                        <motion.div
+                            className="flow-line-progress"
+                            variants={lineVariants}
+                            style={{ width: '100%' }}
+                        />
+                    </div>
+
+                    {steps.map((step, i) => (
+                        <motion.div className="step" key={i} variants={stepVariants}>
+                            <div className="step-icon-container">
+                                <motion.div
+                                    className="step-icon"
+                                    whileHover={{ scale: 1.1, rotate: 5 }}
+                                >
+                                    {step.icon}
+                                </motion.div>
+                                <div className="step-number">{i + 1}</div>
+                            </div>
+                            <div className="step-content">
+                                <h4 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{step.title}</h4>
+                                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: 1.6 }}>{step.text}</p>
+                            </div>
+                        </motion.div>
+                    ))}
+                </motion.div>
+            </div>
+        </section>
+    );
+};
+
 
 // --- Main App ---
 
@@ -395,7 +483,6 @@ function App() {
             <PainPoints />
             <Features />
             <HowItWorks />
-            <Roadmap />
 
             <footer className="footer-main">
                 <div className="container">
@@ -417,10 +504,14 @@ function App() {
                             </div>
                         </div>
                         <div>
-                            <h4 style={{ marginBottom: '1.5rem' }}>Powered By</h4>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)' }}>
-                                <img src="https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_color_92x30dp.svg" alt="Google" height="24" />
-                                <span>Cloud Platform</span>
+                            <h4 style={{ marginBottom: '1.5rem' }}>Contact Us</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <a href="mailto:support@benchmateai.temp" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Sparkles size={16} /> support@benchmateai.temp
+                                </a>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                    Available Mon-Fri <br /> 9:00 AM - 6:00 PM
+                                </p>
                             </div>
                         </div>
                     </div>
