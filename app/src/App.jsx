@@ -31,7 +31,10 @@ import {
     FileText,
     BrainCircuit,
     TrendingUp,
-    Clipboard
+    Clipboard,
+    Menu,
+    X,
+    Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -42,38 +45,6 @@ import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 // --- Decorative Components ---
-const StarBackground = () => {
-    const stars = React.useMemo(() => {
-        console.log("Generating stars...");
-        return Array.from({ length: 100 }).map((_, i) => ({
-            id: i,
-            size: Math.random() * 4 + 1,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            duration: Math.random() * 15 + 10,
-            delay: Math.random() * 5
-        }));
-    }, []);
-
-    return (
-        <div className="star-container">
-            {stars.map(star => (
-                <div
-                    key={star.id}
-                    className="star"
-                    style={{
-                        width: star.size,
-                        height: star.size,
-                        left: star.left,
-                        top: star.top,
-                        animationDuration: `${star.duration}s`,
-                        animationDelay: `${star.delay}s`
-                    }}
-                />
-            ))}
-        </div>
-    );
-};
 
 // --- Components ---
 
@@ -81,11 +52,6 @@ const StarBackground = () => {
 const Hero = ({ onActionClick }) => (
     <section className="hero">
         <div className="container">
-            <div className="hero-bg-shapes">
-                <div className="shape shape-1" />
-                <div className="shape shape-2" />
-            </div>
-
             <motion.div
                 className="hero-content"
                 initial={{ opacity: 0, x: -30 }}
@@ -143,13 +109,25 @@ const Hero = ({ onActionClick }) => (
     </section>
 );
 
-const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }) => (
+const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme, onMenuClick }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 1.5rem' }}>
-            <div className="logo-section" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => window.scrollTo(0, 0)}>
-                <BookOpen className="logo-icon" size={28} />
-                <span className="logo-text google-font" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-blue)' }}>Benchmate AI</span>
+        <div className={isDashboard ? "" : "container"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: isDashboard ? '0 2rem' : '0 1.5rem', maxWidth: isDashboard ? '100%' : '1200px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {isDashboard && (
+                    <button
+                        onClick={onMenuClick}
+                        className="btn-modern btn-glass"
+                        style={{ padding: '0.6rem', borderRadius: '12px' }}
+                    >
+                        <Menu size={20} />
+                    </button>
+                )}
+                <div className="logo-section" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => window.scrollTo(0, 0)}>
+                    <BookOpen className="logo-icon" size={28} />
+                    <span className="logo-text google-font" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-blue)' }}>Benchmate AI</span>
+                </div>
             </div>
+
             <div className="nav-links">
                 {!isDashboard && (
                     <>
@@ -167,18 +145,11 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }
                 </button>
 
                 {user ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="user-profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--google-blue-light)', padding: '0.4rem 1rem', borderRadius: '20px', color: 'var(--google-blue)', fontWeight: 600, fontSize: '0.85rem' }}>
                             <UserIcon size={16} />
                             {user.displayName || user.email?.split('@')[0] || 'Scholar'}
                         </div>
-                        <button
-                            onClick={() => signOut(auth)}
-                            className="btn-modern btn-glass"
-                            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                        >
-                            <LogOut size={16} />
-                        </button>
                     </div>
                 ) : (
                     <button
@@ -193,6 +164,208 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }
         </div>
     </nav>
 );
+
+const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, currentSubject }) => {
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Backdrop */}
+                    <motion.div
+                        className="sidebar-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            background: 'rgba(0,0,0,0.3)',
+                            backdropFilter: 'blur(4px)',
+                            zIndex: 2000
+                        }}
+                    />
+
+                    {/* Sidebar Panel */}
+                    <motion.div
+                        className="sidebar-panel"
+                        initial={{ x: '-100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '-100%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        style={{
+                            position: 'fixed',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '300px',
+                            background: 'var(--glass-bg)',
+                            backdropFilter: 'blur(20px)',
+                            borderRight: '1px solid var(--border-color)',
+                            zIndex: 2001,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: '2rem'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <BookOpen color="var(--google-blue)" size={24} />
+                                <span className="google-font" style={{ fontWeight: 700, fontSize: '1.25rem' }}>Menu</span>
+                            </div>
+                            <button onClick={onClose} className="btn-modern btn-glass" style={{ padding: '0.5rem' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'auto', marginRight: '-1rem', paddingRight: '1rem' }}>
+                            <div className="sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>Main</p>
+
+                                {[
+                                    { icon: <Layout size={20} />, label: 'Dashboard' },
+                                    { icon: <TrendingUp size={20} />, label: 'Learning Curve' },
+                                    { icon: <Clock size={20} />, label: 'Study Sessions' },
+                                ].map((item, i) => (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => {
+                                            if (item.label === 'Dashboard') onNavigate(null, 'subject');
+                                            onClose();
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '1rem',
+                                            padding: '0.85rem 1rem',
+                                            borderRadius: '12px',
+                                            border: 'none',
+                                            background: (item.label === 'Dashboard' && !currentSubject) ? 'var(--google-blue-light)' : 'transparent',
+                                            color: (item.label === 'Dashboard' && !currentSubject) ? 'var(--google-blue)' : 'var(--text-primary)',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        className="sidebar-item"
+                                    >
+                                        {item.icon}
+                                        <span>{item.label}</span>
+                                    </button>
+                                ))}
+
+                                <div style={{ marginTop: '2rem' }}>
+                                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>My Subjects</p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                        {subjects && subjects.length > 0 ? subjects.map((sub, i) => (
+                                            <button
+                                                key={sub.id || i}
+                                                onClick={() => {
+                                                    onNavigate(sub, 'subject');
+                                                    onClose();
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '1rem',
+                                                    padding: '0.75rem 1rem',
+                                                    borderRadius: '12px',
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    color: 'var(--text-primary)',
+                                                    fontWeight: 500,
+                                                    cursor: 'pointer',
+                                                    textAlign: 'left',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                className="sidebar-item"
+                                            >
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: sub.color }}></div>
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: currentSubject?.id === sub.id ? 700 : 500,
+                                                        color: currentSubject?.id === sub.id ? 'var(--google-blue)' : 'inherit'
+                                                    }}
+                                                >
+                                                    {sub.name}
+                                                </span>
+                                            </button>
+                                        )) : (
+                                            <p style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No subjects added yet.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="sidebar-footer" style={{ paddingTop: '2rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <button
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    padding: '0.85rem 1rem',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: 'var(--text-primary)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="sidebar-item"
+                            >
+                                <UserIcon size={20} />
+                                <span>Profile</span>
+                            </button>
+                            <button
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    padding: '0.85rem 1rem',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: 'var(--text-primary)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="sidebar-item"
+                            >
+                                <Settings size={20} />
+                                <span>Settings</span>
+                            </button>
+                            <button
+                                onClick={onLogout}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    padding: '0.85rem 1rem',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: 'var(--google-red)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    marginTop: '0.5rem'
+                                }}
+                                className="sidebar-item"
+                            >
+                                <LogOut size={20} />
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    );
+};
 
 
 const PainPoints = () => (
@@ -408,6 +581,7 @@ function App() {
     const [showAuth, setShowAuth] = useState(false);
     const [user, setUser] = useState(null);
     const [demoUser, setDemoUser] = useState(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
     useEffect(() => {
@@ -453,11 +627,27 @@ function App() {
         setShowAuth(false);
     };
 
+    const [subjects, setSubjects] = useState([]);
+    const [selectedSubject, setSelectedSubject] = useState(null);
+    const [viewMode, setViewMode] = useState('subject');
+
+    useEffect(() => {
+        if (currentUser) {
+            import('./services/db').then(({ initializeUser, subscribeToSubjects }) => {
+                initializeUser(currentUser);
+                const unsubscribe = subscribeToSubjects(currentUser.uid, (data) => {
+                    setSubjects(data);
+                });
+                return () => unsubscribe();
+            });
+        }
+    }, [currentUser]);
+
     if (showAuth) {
         return (
             <div className="app-container">
                 <div className="bg-gradient-layer" />
-                <StarBackground />
+
                 <Auth onBack={() => setShowAuth(false)} onDemoLogin={handleDemoLogin} />
             </div>
         );
@@ -467,9 +657,41 @@ function App() {
         return (
             <div className="app-container">
                 <div className="bg-gradient-layer" />
-                <StarBackground />
-                <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={true} theme={theme} toggleTheme={toggleTheme} />
-                <Dashboard user={currentUser} onLogout={handleLogout} />
+                <div className="ombre-glow glow-1" />
+                <div className="ombre-glow glow-2" />
+
+                <Sidebar
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
+                    user={currentUser}
+                    onLogout={handleLogout}
+                    subjects={subjects}
+                    onNavigate={(sub, mode) => {
+                        setSelectedSubject(sub);
+                        setViewMode(mode);
+                    }}
+                    currentSubject={selectedSubject}
+                />
+
+                <Navbar
+                    scrolled={scrolled}
+                    user={currentUser}
+                    onAuthClick={() => setShowAuth(true)}
+                    isDashboard={true}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                    onMenuClick={() => setIsSidebarOpen(true)}
+                />
+                <Dashboard
+                    user={currentUser}
+                    onLogout={handleLogout}
+                    subjects={subjects}
+                    setSubjects={setSubjects}
+                    selectedSubject={selectedSubject}
+                    setSelectedSubject={setSelectedSubject}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                />
             </div>
         );
     }
@@ -477,7 +699,8 @@ function App() {
     return (
         <div className="app-container">
             <div className="bg-gradient-layer" />
-            <StarBackground />
+            <div className="ombre-glow glow-1" />
+            <div className="ombre-glow glow-2" />
             <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
             <Hero onActionClick={handleActionClick} />
             <PainPoints />

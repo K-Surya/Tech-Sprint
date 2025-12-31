@@ -880,18 +880,15 @@ const SubjectDetailView = ({
     </motion.div>
 );
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
     const [showSubjectModal, setShowSubjectModal] = useState(false);
 
     // Navigation State
-    const [selectedSubject, setSelectedSubject] = useState(null);
     const [selectedLecture, setSelectedLecture] = useState(null);
-    const [viewMode, setViewMode] = useState('subject'); // 'subject', 'lecture', 'flashcards'
 
-    const [subjects, setSubjects] = useState([]);
     const [lectures, setLectures] = useState([]);
     const [newSubject, setNewSubject] = useState('');
 
@@ -899,15 +896,16 @@ const Dashboard = ({ user, onLogout }) => {
     const fileInputRef = useRef(null);
     const timetableRef = useRef(null);
 
-    // Initial User Setup & Data Fetching
+    // Reset lecture when subject changes
+    useEffect(() => {
+        setSelectedLecture(null);
+    }, [selectedSubject]);
+
+    // Initial User Setup
     useEffect(() => {
         if (user) {
-            import('../services/db').then(({ initializeUser, subscribeToSubjects }) => {
+            import('../services/db').then(({ initializeUser }) => {
                 initializeUser(user);
-                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
-                    setSubjects(data);
-                });
-                return () => unsubscribe();
             });
         }
     }, [user]);
