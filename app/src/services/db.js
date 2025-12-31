@@ -14,7 +14,8 @@ import {
     updateDoc,
     deleteDoc,
     arrayUnion,
-    increment
+    increment,
+    limit
 } from 'firebase/firestore';
 
 // --- Users ---
@@ -51,6 +52,11 @@ export const subscribeToSubjects = (userId, callback) => {
     });
 };
 
+export const deleteSubject = async (userId, subjectId) => {
+    const subjectRef = doc(db, 'users', userId, 'subjects', subjectId);
+    await deleteDoc(subjectRef);
+};
+
 // --- Lectures ---
 export const addLecture = async (userId, subjectId, lectureData) => {
     const lecturesRef = collection(db, 'users', userId, 'subjects', subjectId, 'lectures');
@@ -77,6 +83,17 @@ export const subscribeToLectures = (userId, subjectId, callback) => {
             ...doc.data()
         }));
         callback(lectures);
+    });
+};
+
+export const deleteLecture = async (userId, subjectId, lectureId) => {
+    const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
+    await deleteDoc(lectureRef);
+
+    // Decrement subject note count
+    const subjectRef = doc(db, 'users', userId, 'subjects', subjectId);
+    await updateDoc(subjectRef, {
+        noteCount: increment(-1)
     });
 };
 
@@ -185,3 +202,23 @@ export const getCalendarAuthStatus = async (userId) => {
 };
 
 
+// --- Recent Activity ---
+export const logActivity = async (userId, activityData) => {
+    const activityRef = collection(db, 'users', userId, 'recentActivity');
+    await addDoc(activityRef, {
+        ...activityData,
+        timestamp: serverTimestamp()
+    });
+};
+
+export const subscribeToRecentActivity = (userId, limitCount, callback) => {
+    const activityRef = collection(db, 'users', userId, 'recentActivity');
+    const q = query(activityRef, orderBy('timestamp', 'desc'), limit(limitCount));
+    return onSnapshot(q, (snapshot) => {
+        const activities = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(activities);
+    });
+};
