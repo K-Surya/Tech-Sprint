@@ -43,6 +43,8 @@ import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import ErrorBoundary from './components/ErrorBoundary';
+import { avatars } from './components/AvatarSelection';
 
 // --- Decorative Components ---
 
@@ -130,10 +132,10 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme, 
 
             <div className="nav-links">
                 {!isDashboard && (
-                    <>
+                    <div className="desktop-only" style={{ display: 'flex', gap: '1.5rem' }}>
                         <a href="#features" className="nav-link">Features</a>
                         <a href="#how-it-works" className="nav-link">How it Works</a>
-                    </>
+                    </div>
                 )}
 
                 <button
@@ -155,9 +157,9 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme, 
                     <button
                         onClick={onAuthClick}
                         className="btn-modern btn-solid"
-                        style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }}
+                        style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
                     >
-                        Login / Join Now
+                        Login
                     </button>
                 )}
             </div>
@@ -584,6 +586,7 @@ function App() {
     const [demoUser, setDemoUser] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [profileReq, setProfileReq] = useState(0);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -594,15 +597,38 @@ function App() {
 
     const currentUser = user || demoUser;
 
+    const [userProfile, setUserProfile] = useState(null);
+
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-            setUser(authUser);
+        let profileUnsubscribe = null;
+
+        const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+            if (profileUnsubscribe) {
+                profileUnsubscribe();
+                profileUnsubscribe = null;
+            }
+
             if (authUser) {
+                try {
+                    const { subscribeToUserProfile } = await import('./services/db');
+                    profileUnsubscribe = subscribeToUserProfile(authUser.uid, (profile) => {
+                        setUserProfile(profile);
+                    });
+                } catch (e) {
+                    console.error("Error subscribing to profile in App:", e);
+                }
+                setUser(authUser);
                 setShowAuth(false);
                 setDemoUser(null);
+            } else {
+                setUser(null);
+                setUserProfile(null);
             }
         });
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (profileUnsubscribe) profileUnsubscribe();
+        };
     }, []);
 
     useEffect(() => {
