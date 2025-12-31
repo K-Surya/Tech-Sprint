@@ -1168,7 +1168,7 @@ const ProfileView = ({ onBack, user }) => {
     );
 };
 
-const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity }) => {
+const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity, userProfile, setUserProfile }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');

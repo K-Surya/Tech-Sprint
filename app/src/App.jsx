@@ -728,6 +728,8 @@ function App() {
                     setViewMode={setViewMode}
                     glassIntensity={glassIntensity}
                     setGlassIntensity={setGlassIntensity}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
                 />
             </div>
         );
