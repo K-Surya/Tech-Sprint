@@ -3,7 +3,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_QUIZ);
 
 async function generateQuiz(subject, summary) {
-  const model = genAI.getGenerativeModel({ model: "gemma-7b" });
+  const model = genAI.getGenerativeModel({
+    model: "gemma-7b",
+    generationConfig: {
+      responseMimeType: "application/json",
+    }
+  });
 
   const prompt = `
     You are an experienced exam question setter.
@@ -11,55 +16,51 @@ async function generateQuiz(subject, summary) {
     Subject: ${subject}
 
     You are given structured summary notes of a lecture.
-    Using ONLY the information in these notes, generate a quiz with EXACTLY 10 multiple-choice questions.
+    Using ONLY the information in these notes, generate a quiz with EXACTLY 5 multiple-choice questions.
 
     STRICT RULES (VERY IMPORTANT):
-    - Do NOT include question numbers like Q1, Q2, etc.
-    - Do NOT include A), B), C), D) labels
-    - Output ONLY valid JSON
-    - Do NOT include any text before or after the JSON
-    - Do NOT wrap the response in markdown or code blocks
-
-    Each question must be an object with the following keys:
-    - question (string)
-    - options (object with keys A, B, C, D)
-    - correctAnswer (string: "A" | "B" | "C" | "D")
-    - explanation (string, 1–2 lines)
+    - Return ONLY valid JSON
+    - Each question must be an object with the following keys:
+      - question (string)
+      - options (object with keys A, B, C, D)
+      - correctAnswer (string: "A" | "B" | "C" | "D")
+      - explanation (string, 1–2 lines)
 
     The final output must be a single JSON object in this exact shape:
-
     {
       "quiz": [
         {
-          "question": "",
+          "question": "The question text?",
           "options": {
-            "A": "",
-            "B": "",
-            "C": "",
-            "D": ""
+            "A": "Option 1",
+            "B": "Option 2",
+            "C": "Option 3",
+            "D": "Option 4"
           },
-          "correctAnswer": "",
-          "explanation": ""
+          "correctAnswer": "A",
+          "explanation": "Why A is correct."
         }
       ]
     }
-
-    Generate EXACTLY 10 question objects inside the quiz array.
-
-    IMPORTANT:
-    Return ONLY the JSON object.
-    Do NOT wrap it inside another object.
-    Do NOT put it inside quotes.
-    Do NOT use markdown.
 
     Summary Notes:
     ${summary}
   `;
 
+  try {
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
+    // Clean potential markdown or extra text (though responseMimeType should handle it)
+    const cleanJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsedData = JSON.parse(cleanJson);
 
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+    // Return only the quiz array to the caller
+    return parsedData.quiz || parsedData;
+  } catch (error) {
+    console.error("Error in generateQuiz service:", error);
+    throw new Error("Failed to generate or parse quiz JSON");
+  }
 }
 
 export default generateQuiz;
