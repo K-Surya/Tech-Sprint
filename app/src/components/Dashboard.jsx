@@ -31,6 +31,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { cleanText } from '../utils/textCleaner';
+import AvatarSelection, { avatars } from './AvatarSelection';
 
 // --- Flashcard Component ---
 // --- Flashcard Component --- //
@@ -942,7 +944,7 @@ const SubjectDetailView = ({
     );
 };
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
@@ -958,6 +960,15 @@ const Dashboard = ({ user, onLogout }) => {
     const [selectedLecture, setSelectedLecture] = useState(null);
     const [viewMode, setViewMode] = useState('subject'); // 'subject', 'lecture', 'flashcards'
 
+    // Handle Profile Request
+    useEffect(() => {
+        if (profileRequest > 0) {
+            setSelectedSubject(null);
+            setSelectedLecture(null);
+            setViewMode('profile');
+        }
+    }, [profileRequest]);
+
     const [subjects, setSubjects] = useState([]);
     const [lectures, setLectures] = useState([]);
     const [recentActivities, setRecentActivities] = useState([]);
@@ -968,11 +979,22 @@ const Dashboard = ({ user, onLogout }) => {
     const timetableRef = useRef(null);
 
     // Initial User Setup & Data Fetching
+    // Initial User Setup & Data Fetching
+    // userProfile is passed from App.jsx
+
+
     useEffect(() => {
         if (user) {
+<<<<<<< HEAD
             import('../services/db').then(async ({ initializeUser, subscribeToSubjects, subscribeToExams, subscribeToRecentActivity }) => {
                 initializeUser(user);
                 const unsubscribeSubjects = subscribeToSubjects(user.uid, (data) => {
+=======
+            import('../services/db').then(async ({ initializeUser, subscribeToSubjects }) => {
+                await initializeUser(user);
+
+                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
+>>>>>>> analytics
                     setSubjects(data);
                 });
                 const unsubscribeExams = subscribeToExams(user.uid, (data) => {
@@ -1016,6 +1038,20 @@ const Dashboard = ({ user, onLogout }) => {
             });
         }
     }, [user]);
+
+    const handleAvatarSave = async (avatarId) => {
+        try {
+            const { updateUserProfile } = await import('../services/db');
+            await updateUserProfile(user.uid, { avatar: avatarId });
+            setUserProfile(prev => ({ ...prev, avatar: avatarId }));
+        } catch (error) {
+            console.error("Failed to save avatar:", error);
+            alert("Failed to save avatar. Please try again.");
+        }
+    };
+
+    // Force Avatar Selection if new user (no avatar set)
+
 
     // Fetch Lectures when Subject is Selected
     useEffect(() => {
@@ -1080,6 +1116,7 @@ const Dashboard = ({ user, onLogout }) => {
             console.log("Starting note generation for subject:", selectedSubject.name);
             // 1. Call Backend API to generate structured notes
             const { generateNotes } = await import('../services/api');
+<<<<<<< HEAD
             const result = await generateNotes(rawText, selectedSubject.name);
             console.log("AI Result:", result);
 
@@ -1144,6 +1181,17 @@ const Dashboard = ({ user, onLogout }) => {
                     }
                 }
             }
+=======
+
+            // Clean the text before sending to AI
+            const cleanedTranscript = cleanText(rawText);
+            console.log("Original Text Length:", rawText.length);
+            console.log("Cleaned Text Length:", cleanedTranscript.length);
+            console.log("Cleaned Text Preview:", cleanedTranscript.slice(0, 100));
+
+            const structuredNotes = await generateNotes(cleanedTranscript, selectedSubject.name);
+            if (!structuredNotes) throw new Error("No notes returned from AI");
+>>>>>>> analytics
 
             // 2. Save both raw and structured (or just structured)
             // Storing structuredNotes as the main 'transcript' used for study
@@ -1426,21 +1474,43 @@ const Dashboard = ({ user, onLogout }) => {
 
 
 
+    // Force Avatar Selection if new user (no avatar set)
+    // Moved here to ensure all hooks run before conditional return
+    if (userProfile && !userProfile.avatar && viewMode !== 'profile') {
+        return (
+            <div style={{ minHeight: '100vh', background: '#f8faff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ background: 'white', borderRadius: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', overflow: 'hidden', maxWidth: '800px', width: '90%' }}
+                >
+                    <AvatarSelection onSelect={handleAvatarSave} isOnboarding={true} />
+                </motion.div>
+            </div>
+        );
+    }
+
     return (
         <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent' }}>
             <div className="container" style={{ padding: '2rem 1rem' }}>
 
+<<<<<<< HEAD
                 {/* Dashboard Header - Show only if no subject selected */}
                 {!selectedSubject && (
                     <div className="dashboard-header" style={{ marginBottom: '3rem' }}>
+=======
+                {/* Dashboard Header - Show only if no subject selected AND not in profile mode */}
+                {!selectedSubject && viewMode === 'subject' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '2rem' }}>
+>>>>>>> analytics
                         <div>
                             <motion.h1
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="google-font"
-                                style={{ fontSize: '2.5rem', fontWeight: 700 }}
+                                style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.5rem', lineHeight: 1.2 }}
                             >
-                                Welcome back, <span className="text-gradient" style={{ background: 'var(--grad-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{user.displayName || 'Scholar'}</span>!
+                                Welcome back, <span className="text-gradient" style={{ background: 'var(--grad-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{userProfile?.nickname || user.displayName || 'Scholar'}</span>!
                             </motion.h1>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Select a subject to start recording or view notes.</p>
                         </div>
@@ -1448,9 +1518,10 @@ const Dashboard = ({ user, onLogout }) => {
                             <button className="btn-modern btn-glass" onClick={() => setShowExamModal(true)}>
                                 <Calendar size={20} /> Add Exam
                             </button>
-                            <button className="btn-modern btn-solid" onClick={() => setShowSubjectModal(true)}>
+                            <button className="btn-modern btn-glass" onClick={() => setShowSubjectModal(true)}>
                                 <Plus size={20} /> Add Subject
                             </button>
+
                         </div>
                     </div>
                 )}
@@ -1486,6 +1557,111 @@ const Dashboard = ({ user, onLogout }) => {
                             subjectId={selectedSubject.id}
                             removeLecture={removeLecture}
                         />
+                    ) : viewMode === 'profile' ? (
+                        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                                <button onClick={() => setViewMode('subject')} className="btn-modern btn-glass" style={{ marginRight: '1rem' }}>
+                                    <ArrowLeft size={20} />
+                                </button>
+                                <h2 className="google-font" style={{ margin: 0 }}>My Profile</h2>
+                            </div>
+
+                            <div className="lab-card" style={{ background: 'white', padding: '2.5rem', borderRadius: '24px' }}>
+                                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                                    <div style={{ width: '120px', height: '120px', margin: '0 auto 1.5rem auto', position: 'relative' }}>
+                                        <img
+                                            src={(avatars && avatars.find(a => a.id === userProfile?.avatar)?.src) || (avatars && avatars[0]?.src) || 'https://via.placeholder.com/150'}
+                                            alt="Profile"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                        />
+                                        <button
+                                            onClick={() => setViewMode('select-avatar')}
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                right: 0,
+                                                background: 'var(--google-blue)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '36px',
+                                                height: '36px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                            }}
+                                        >
+                                            <RefreshCw size={16} />
+                                        </button>
+                                    </div>
+                                    <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{userProfile?.nickname || user.displayName}</h3>
+                                    <p style={{ color: 'var(--text-secondary)' }}>{user.email}</p>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                        Joined: {userProfile?.joinedAt?.seconds
+                                            ? new Date(userProfile.joinedAt.seconds * 1000).toLocaleDateString()
+                                            : user.metadata?.creationTime
+                                                ? new Date(user.metadata.creationTime).toLocaleDateString()
+                                                : 'Just now'}
+                                    </p>
+                                </div>
+
+                                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
+                                    <h4 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Account Settings</h4>
+                                    <div style={{ display: 'grid', gap: '1rem' }}>
+                                        <div className="input-group">
+                                            <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Nickname</label>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <input
+                                                    type="text"
+                                                    defaultValue={userProfile?.nickname || user.displayName}
+                                                    id="nickname-input"
+                                                    style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: '#fff', color: 'var(--text-primary)' }}
+                                                />
+                                                <button
+                                                    className="btn-modern btn-solid"
+                                                    onClick={async () => {
+                                                        const newNickname = document.getElementById('nickname-input').value;
+                                                        if (newNickname.trim()) {
+                                                            try {
+                                                                const { updateUserProfile } = await import('../services/db');
+                                                                await updateUserProfile(user.uid, { nickname: newNickname });
+                                                                // Optimistic update if needed, but subscription handles it
+                                                                alert("Nickname updated!");
+                                                            } catch (e) {
+                                                                console.error("Error updating nickname:", e);
+                                                                alert("Failed to update nickname.");
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    Save
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : viewMode === 'select-avatar' ? (
+                        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                                <button onClick={() => setViewMode('profile')} className="btn-modern btn-glass" style={{ marginRight: '1rem' }}>
+                                    <ArrowLeft size={20} />
+                                </button>
+                                <h2 className="google-font" style={{ margin: 0 }}>Change Avatar</h2>
+                            </div>
+                            <div className="lab-card" style={{ background: 'white', borderRadius: '24px', padding: '1rem' }}>
+                                <AvatarSelection
+                                    onSelect={async (id) => {
+                                        await handleAvatarSave(id);
+                                        setViewMode('profile');
+                                    }}
+                                    initialAvatar={userProfile?.avatar}
+                                />
+                            </div>
+                        </div>
                     ) : selectedSubject ? (
                         <SubjectDetailView
                             key="subject"
