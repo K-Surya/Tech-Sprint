@@ -615,7 +615,8 @@ const LectureDetailView = ({
     generateAndSaveFlashcards,
     generateAndSaveQuiz,
     userId,
-    subjectId
+    subjectId,
+    removeLecture
 }) => {
     const [activeTab, setActiveTab] = useState('notes'); // 'notes', 'flashcards', 'quiz'
     const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
@@ -647,7 +648,16 @@ const LectureDetailView = ({
                     <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Processed Notes & Study Material</p>
                 </div>
 
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button
+                        onClick={(e) => removeLecture(e, selectedLecture.id, selectedLecture.title)}
+                        className="btn-modern btn-glass"
+                        style={{ color: '#e53e3e', border: '1px solid rgba(229, 62, 62, 0.2)', padding: '0.6rem 1rem' }}
+                    >
+                        <Trash2 size={18} /> Delete Lecture
+                    </button>
+
+                    <div style={{ width: '1px', height: '24px', background: '#e2e8f0', margin: '0 0.5rem' }}></div>
                     {!selectedLecture.hasFlashcards && (
                         <button
                             className="btn-modern btn-solid"
@@ -790,101 +800,158 @@ const SubjectDetailView = ({
     lectures,
     setSelectedLecture,
     setViewMode,
-    timetableRef
-}) => (
-    <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-    >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-            <button
-                onClick={() => { setSelectedSubject(null); setLectures([]); }}
-                className="btn-modern btn-glass"
-                style={{ padding: '0.6rem', borderRadius: '50%' }}
-            >
-                <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
-            </button>
-            <div>
-                <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
-                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Subject Workspace</p>
-            </div>
-        </div>
+    timetableRef,
+    exams,
+    removeLecture,
+    removeSubject
+}) => {
+    const subjectExams = exams.filter(e => e.subjectName === selectedSubject.name);
 
-        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-            {/* Main Area: Audio Lab & Notes */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                {/* Isolated Recorder Component */}
-                <AudioRecorder onSave={saveLectureToDB} />
-
-                {/* Recent Lectures List (New) */}
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                <button
+                    onClick={() => { setSelectedSubject(null); setLectures([]); }}
+                    className="btn-modern btn-glass"
+                    style={{ padding: '0.6rem', borderRadius: '50%' }}
+                >
+                    <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
+                </button>
                 <div>
-                    <h3 className="google-font" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Your Lectures</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                        {lectures.length === 0 && (
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', width: '100%', fontStyle: 'italic' }}>
-                                No lectures recorded yet. Start recording above!
-                            </p>
-                        )}
-                        {lectures.map((lecture, i) => {
-                            const lectureNumber = lectures.length - i;
-                            // Use the exact same gradient as the home page (brand blue)
-                            const bg = 'var(--grad-primary)';
+                    <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Subject Workspace</p>
+                </div>
 
-                            return (
-                                <div
-                                    key={lecture.id}
-                                    onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
-                                    style={{
-                                        background: bg,
-                                        borderRadius: '20px',
-                                        padding: '1.5rem',
-                                        cursor: 'pointer',
-                                        border: 'none',
-                                        transition: 'all 0.2s ease',
-                                        color: 'white',
-                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-                                    }}
-                                    className="lecture-card-hover"
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                        <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700 }}>
-                                            {lectureNumber}
+                <div style={{ marginLeft: 'auto' }}>
+                    <button
+                        onClick={(e) => removeSubject(e, selectedSubject.id, selectedSubject.name)}
+                        className="btn-modern btn-glass"
+                        style={{ color: '#e53e3e', border: '1px solid rgba(229, 62, 62, 0.2)' }}
+                    >
+                        <Trash2 size={18} /> Delete Subject
+                    </button>
+                </div>
+            </div>
+
+            <div className="dashboard-grid">
+                {/* Main Area: Audio Lab & Notes */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    {/* Isolated Recorder Component */}
+                    <AudioRecorder onSave={saveLectureToDB} />
+
+                    {/* Recent Lectures List (New) */}
+                    <div>
+                        <h3 className="google-font" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Your Lectures</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                            {lectures.length === 0 && (
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', width: '100%', fontStyle: 'italic' }}>
+                                    No lectures recorded yet. Start recording above!
+                                </p>
+                            )}
+                            {lectures.map((lecture, i) => {
+                                const lectureNumber = lectures.length - i;
+                                // Use the exact same gradient as the home page (brand blue)
+                                const bg = 'var(--grad-primary)';
+
+                                return (
+                                    <div
+                                        key={lecture.id}
+                                        onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
+                                        style={{
+                                            background: bg,
+                                            borderRadius: '20px',
+                                            padding: '1.5rem',
+                                            cursor: 'pointer',
+                                            border: 'none',
+                                            transition: 'all 0.2s ease',
+                                            color: 'white',
+                                            boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                        }}
+                                        className="lecture-card-hover"
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.4rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <FileText size={20} />
+                                            </div>
+                                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 600 }}>
+                                                {i === 0 ? 'LATEST' : 'SAVED'}
+                                            </div>
                                         </div>
-                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem' }}>
-                                            {i === 0 ? 'Latest' : 'Saved'}
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>
+                                            {selectedSubject.name}
+                                        </div>
+                                        <h4 className="google-font" style={{ margin: '0 0 0.8rem 0', fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                            {lecture.title}
+                                        </h4>
+                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: 'auto' }}>
+                                            <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
                                         </div>
                                     </div>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 600 }}>{lecture.title}</h4>
-                                    <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
-                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sidebar */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                        <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Next Exam</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {subjectExams.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+                                    <p>No exams scheduled for this subject.</p>
                                 </div>
-                            )
-                        })}
+                            ) : (
+                                subjectExams.map((exam, i) => (
+                                    <div key={exam.id || i} style={{
+                                        background: 'var(--grad-hero)',
+                                        padding: '1rem',
+                                        borderRadius: '16px',
+                                        border: '1px solid var(--border-color)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '1rem'
+                                    }}>
+                                        <div style={{ background: 'white', padding: '0.5rem', borderRadius: '12px', color: 'var(--google-red)' }}>
+                                            <Calendar size={20} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{exam.subjectName}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                {new Date(exam.examDate).toLocaleDateString(undefined, {
+                                                    weekday: 'short',
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {/* Sidebar */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
-                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Next Exam</h3>
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                        <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-                        <p>No exams scheduled.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </motion.div>
-);
+        </motion.div>
+    );
+};
 
 const Dashboard = ({ user, onLogout }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
     const [showSubjectModal, setShowSubjectModal] = useState(false);
+    const [showExamModal, setShowExamModal] = useState(false);
+    const [exams, setExams] = useState([]);
+    const [newExam, setNewExam] = useState({ subjectName: '', examDate: '', syncToCalendar: false });
+    const [calendarAuthorized, setCalendarAuthorized] = useState(false);
+    const [calendarInitialized, setCalendarInitialized] = useState(false);
 
     // Navigation State
     const [selectedSubject, setSelectedSubject] = useState(null);
@@ -893,6 +960,7 @@ const Dashboard = ({ user, onLogout }) => {
 
     const [subjects, setSubjects] = useState([]);
     const [lectures, setLectures] = useState([]);
+    const [recentActivities, setRecentActivities] = useState([]);
     const [newSubject, setNewSubject] = useState('');
 
     const timerRef = useRef(null);
@@ -902,12 +970,49 @@ const Dashboard = ({ user, onLogout }) => {
     // Initial User Setup & Data Fetching
     useEffect(() => {
         if (user) {
-            import('../services/db').then(({ initializeUser, subscribeToSubjects }) => {
+            import('../services/db').then(async ({ initializeUser, subscribeToSubjects, subscribeToExams, subscribeToRecentActivity }) => {
                 initializeUser(user);
-                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
+                const unsubscribeSubjects = subscribeToSubjects(user.uid, (data) => {
                     setSubjects(data);
                 });
-                return () => unsubscribe();
+                const unsubscribeExams = subscribeToExams(user.uid, (data) => {
+                    setExams(data);
+                });
+                const unsubscribeActivity = subscribeToRecentActivity(user.uid, 3, (data) => {
+                    setRecentActivities(data);
+                });
+                return () => {
+                    unsubscribeSubjects();
+                    unsubscribeExams();
+                    unsubscribeActivity();
+                };
+            });
+
+            // Initialize Google Calendar and check saved auth status
+            import('../services/calendar').then(async ({ initializeGoogleCalendar, isCalendarAuthorized, refreshCalendarToken }) => {
+                const { getCalendarAuthStatus } = await import('../services/db');
+
+                await initializeGoogleCalendar();
+                setCalendarInitialized(true);
+
+                // Check if user previously authorized calendar
+                const savedAuthStatus = await getCalendarAuthStatus(user.uid);
+                let currentAuthStatus = isCalendarAuthorized();
+
+                if (savedAuthStatus && !currentAuthStatus) {
+                    console.log('ℹ️ User previously authorized calendar, attempting silent refresh...');
+                    // Try to restore session silently with email hint
+                    const refreshed = await refreshCalendarToken(user.email);
+                    if (refreshed) {
+                        currentAuthStatus = true;
+                        console.log('✨ Session restored silently!');
+                    } else {
+                        console.log('❌ Silent refresh failed, user needs to re-authorize');
+                    }
+                }
+
+                setCalendarAuthorized(currentAuthStatus);
+                console.log('📊 Calendar auth status:', currentAuthStatus ? 'Active' : savedAuthStatus ? 'Previously authorized' : 'Not authorized');
             });
         }
     }, [user]);
@@ -926,20 +1031,124 @@ const Dashboard = ({ user, onLogout }) => {
         }
     }, [user, selectedSubject]);
 
+    // Cleanup past exams
+    useEffect(() => {
+        if (exams.length > 0 && calendarAuthorized) {
+            const cleanupPastExams = async () => {
+                const { cleanupPastEvents } = await import('../services/calendar');
+                const { deleteExam } = await import('../services/db');
+
+                const pastExamIds = await cleanupPastEvents(exams);
+                // Delete past exams from database
+                for (const examId of pastExamIds) {
+                    await deleteExam(user.uid, examId);
+                }
+            };
+            cleanupPastExams();
+        }
+    }, [exams, calendarAuthorized, user]);
+
+    // Verify calendar sync status (detect external deletions)
+    useEffect(() => {
+        if (exams.length > 0 && calendarAuthorized && user) {
+            const verifySyncs = async () => {
+                const { verifyAllExamSyncs } = await import('../services/calendar');
+                const { deleteExam } = await import('../services/db');
+
+                // Callback to delete exam if event was deleted externally
+                const deleteCallback = async (examId) => {
+                    await deleteExam(user.uid, examId);
+                    console.log('🗑️ Deleted exam from timetable (removed from Google Calendar externally)');
+                };
+
+                await verifyAllExamSyncs(exams, user.uid, deleteCallback);
+            };
+
+            // Run verification every 30 seconds
+            const interval = setInterval(verifySyncs, 30000);
+            verifySyncs(); // Run immediately on mount
+
+            return () => clearInterval(interval);
+        }
+    }, [exams, calendarAuthorized, user]);
+
     // Recording logic moved to AudioRecorder component for performance
     const saveLectureToDB = async (rawText) => {
         if (!user || !selectedSubject) return;
 
         try {
+            console.log("Starting note generation for subject:", selectedSubject.name);
             // 1. Call Backend API to generate structured notes
             const { generateNotes } = await import('../services/api');
-            const structuredNotes = await generateNotes(rawText, selectedSubject.name);
-            if (!structuredNotes) throw new Error("No notes returned from AI");
+            const result = await generateNotes(rawText, selectedSubject.name);
+            console.log("AI Result:", result);
+
+            if (!result || !result.notes) {
+                const faultData = result ? JSON.stringify(result).slice(0, 100) : "null/undefined";
+                console.error("Invalid AI response:", result);
+                throw new Error(`AI returned invalid format: ${faultData}`);
+            }
+
+            const structuredNotes = result.notes;
+
+            // Extract a title from the notes
+            let extractedTitle = result.title || `Lecture ${lectures.length + 1}`;
+
+            if (!result.title) {
+                const lines = structuredNotes.split('\n');
+                const subjectLower = selectedSubject.name.toLowerCase().trim();
+
+                for (const line of lines) {
+                    const cleanLine = line.trim().replace(/^[\*\#\s\_]+|[\*\#\s\_]+$/g, '');
+                    if (!cleanLine || cleanLine.length < 3) continue;
+
+                    // Skip if the extracted title is too similar to the subject name
+                    const cleanLower = cleanLine.toLowerCase();
+                    if (cleanLower === subjectLower ||
+                        cleanLower === `${subjectLower} notes` ||
+                        cleanLower === `about ${subjectLower}`) continue;
+
+                    const originalLine = line.trim();
+                    // Prioritize structured separators
+                    if (originalLine.startsWith('#') ||
+                        (originalLine.startsWith('**') && originalLine.endsWith('**')) ||
+                        originalLine.toLowerCase().startsWith('topic:') ||
+                        originalLine.toLowerCase().startsWith('title:')) {
+
+                        let crispTitle = cleanLine.replace(/^(topic|title):\s*/i, '');
+
+                        // Aggressive cleaning for crisp headings
+                        // 1. Remove academic prefixes
+                        crispTitle = crispTitle.replace(/^(understanding|introduction to|basics of|intro to|lecture:|notes on|chapter:|about|overview of)\s+/i, '');
+
+                        // 2. Handle separators and academic suffixes
+                        // Split on common separators - use the first significant part
+                        crispTitle = crispTitle.split(/[\-\–\—\:]/)[0].trim();
+
+                        // Remove academic fluff at the end
+                        crispTitle = crispTitle.replace(/\s+(an introduction|basics|notes|overview|series|lecture)$/i, '');
+
+                        // 3. Clear subject name prefix
+                        if (crispTitle.toLowerCase().includes(':')) {
+                            const parts = crispTitle.split(':');
+                            const firstPart = parts[0].toLowerCase().trim();
+                            if (firstPart === subjectLower || firstPart.includes('lecture') || firstPart.includes('notes')) {
+                                crispTitle = parts.slice(1).join(':').trim();
+                            }
+                        }
+
+                        // 4. Enforce 2-word limit for most professional look
+                        const words = crispTitle.split(/\s+/).filter(w => w.length > 0);
+                        extractedTitle = words.slice(0, 2).join(' ').replace(/[\:\-\s]+$/, '').trim();
+                        break;
+                    }
+                }
+            }
 
             // 2. Save both raw and structured (or just structured)
             // Storing structuredNotes as the main 'transcript' used for study
             const lectureData = {
-                title: `Lecture ${lectures.length + 1}`,
+                title: extractedTitle,
                 transcript: structuredNotes, // Using AI generated notes
                 rawTranscript: rawText, // Keeping raw just in case
                 duration: 0,
@@ -947,13 +1156,66 @@ const Dashboard = ({ user, onLogout }) => {
                 type: 'Recording'
             };
 
-            const { addLecture } = await import('../services/db');
+            const { addLecture, logActivity } = await import('../services/db');
             await addLecture(user.uid, selectedSubject.id, lectureData);
+            await logActivity(user.uid, {
+                type: 'note',
+                text: `Generated notes for ${selectedSubject.name}`
+            });
             console.log("Lecture saved!");
         } catch (error) {
             console.error("Failed to save lecture:", error);
-            alert("Error processing notes: " + (error.message || "Unknown error"));
+            alert("⚠️ Generation Error: " + (error.message || "Something went wrong") + "\n\nPlease check your internet connection or the length of the transcript.");
             throw error; // Re-throw so AudioRecorder knows it failed
+        }
+    };
+
+    const removeSubject = async (e, subjectId, subjectName) => {
+        if (e) e.stopPropagation();
+        const confirmed = window.confirm(
+            `⚠️ DANGER: Are you sure you want to delete "${subjectName}"?\n\n` +
+            `This will permanently remove the subject and ALL associated notes, flashcards, and quizzes. This action cannot be undone.`
+        );
+
+        if (confirmed) {
+            try {
+                const { deleteSubject, logActivity } = await import('../services/db');
+                await deleteSubject(user.uid, subjectId);
+                await logActivity(user.uid, {
+                    type: 'subject',
+                    text: `Deleted subject (and all its notes): ${subjectName}`
+                });
+                // Redirect to main dashboard
+                setSelectedSubject(null);
+                setLectures([]);
+                setSelectedLecture(null);
+                setViewMode('dashboard');
+            } catch (error) {
+                console.error("Failed to delete subject:", error);
+                alert("Failed to delete subject.");
+            }
+        }
+    };
+
+    const removeLecture = async (e, lectureId, lectureTitle) => {
+        if (e) e.stopPropagation();
+        if (window.confirm(`Are you sure you want to delete "${lectureTitle}"?`)) {
+            try {
+                const { deleteLecture, logActivity } = await import('../services/db');
+                await deleteLecture(user.uid, selectedSubject.id, lectureId);
+                await logActivity(user.uid, {
+                    type: 'note',
+                    text: `Deleted lecture: ${lectureTitle}`
+                });
+                // If we are currently viewing this lecture, go back to subject view
+                if (selectedLecture && selectedLecture.id === lectureId) {
+                    setSelectedLecture(null);
+                    setViewMode('subject');
+                }
+            } catch (error) {
+                console.error("Failed to delete lecture:", error);
+                alert("Failed to delete lecture.");
+            }
         }
     };
 
@@ -969,13 +1231,117 @@ const Dashboard = ({ user, onLogout }) => {
             const color = colors[Math.floor(Math.random() * colors.length)];
 
             try {
-                const { addSubject } = await import('../services/db');
+                const { addSubject, logActivity } = await import('../services/db');
                 await addSubject(user.uid, newSubject, color);
+                await logActivity(user.uid, {
+                    type: 'subject',
+                    text: `Created subject: ${newSubject}`
+                });
                 setNewSubject('');
                 setShowSubjectModal(false);
             } catch (error) {
                 console.error("Error adding subject:", error);
                 alert("Failed to create subject. Check console.");
+            }
+        }
+    };
+
+    const addExam = async () => {
+        if (newExam.subjectName.trim() && newExam.examDate && user) {
+            try {
+                console.log('🎯 Adding exam:', newExam);
+                console.log('📊 Calendar status:', { authorized: calendarAuthorized, syncRequested: newExam.syncToCalendar });
+
+                const examData = {
+                    subjectName: newExam.subjectName,
+                    examDate: newExam.examDate
+                };
+
+                // Add to database first
+                const { addExam, updateExamCalendarId, logActivity } = await import('../services/db');
+                const examId = await addExam(user.uid, examData);
+                await logActivity(user.uid, {
+                    type: 'exam',
+                    text: `Scheduled exam for ${newExam.subjectName}`
+                });
+                console.log('✅ Exam saved to database, ID:', examId);
+
+                // If calendar sync is enabled, create calendar event
+                if (newExam.syncToCalendar && calendarAuthorized) {
+                    console.log('📅 Syncing to Google Calendar...');
+                    try {
+                        const { createExamEvent, isCalendarAuthorized, refreshCalendarToken } = await import('../services/calendar');
+
+                        // Check if we still have a valid token
+                        if (!isCalendarAuthorized()) {
+                            console.log('🔄 Token missing during sync, attempting silent refresh...');
+                            const refreshed = await refreshCalendarToken(user.email);
+                            if (!refreshed) {
+                                throw new Error("Google Calendar session expired. Please re-link your account.");
+                            }
+                        }
+
+                        const eventId = await createExamEvent(examData);
+                        console.log('✅ Calendar event created, ID:', eventId);
+
+                        // Update exam with calendar event ID
+                        await updateExamCalendarId(user.uid, examId, eventId);
+                        console.log('✅ Database updated with calendar event ID');
+                    } catch (calError) {
+                        console.error("❌ Failed to create calendar event:", calError);
+                        if (calError.message?.includes("session expired")) {
+                            setCalendarAuthorized(false); // Update UI to show disconnect
+                        }
+                        alert("Exam added but failed to sync to Google Calendar. Error: " + (calError.message || 'Unknown error'));
+                    }
+                } else {
+                    console.log('ℹ️ Skipping calendar sync:', !newExam.syncToCalendar ? 'Not requested' : 'Not authorized');
+                }
+
+                setNewExam({ subjectName: '', examDate: '', syncToCalendar: false });
+                setShowExamModal(false);
+            } catch (error) {
+                console.error("❌ Error adding exam:", error);
+                alert("Failed to add exam. Check console for details.");
+            }
+        }
+    };
+
+    const handleCalendarAuth = async () => {
+        try {
+            const { requestCalendarAccess, isCalendarAuthorized } = await import('../services/calendar');
+            const { saveCalendarAuthStatus } = await import('../services/db');
+
+            await requestCalendarAccess(user.email);
+            const authStatus = isCalendarAuthorized();
+            setCalendarAuthorized(authStatus);
+
+            // Save authorization status to database
+            if (authStatus) {
+                await saveCalendarAuthStatus(user.uid, true);
+                console.log('✅ Calendar authorization saved to database');
+            }
+        } catch (error) {
+            console.error("Calendar authorization failed:", error);
+            alert("Failed to authorize Google Calendar access.");
+        }
+    };
+
+    const removeExam = async (examId, calendarEventId) => {
+        if (user) {
+            try {
+                // Delete from calendar first if it has an event ID
+                if (calendarEventId && calendarAuthorized) {
+                    const { deleteExamEvent } = await import('../services/calendar');
+                    await deleteExamEvent(calendarEventId);
+                }
+
+                // Then delete from database
+                const { deleteExam } = await import('../services/db');
+                await deleteExam(user.uid, examId);
+            } catch (error) {
+                console.error("Error deleting exam:", error);
+                alert("Failed to delete exam.");
             }
         }
     };
@@ -994,8 +1360,12 @@ const Dashboard = ({ user, onLogout }) => {
                 return false;
             }
 
-            const { addFlashcards } = await import('../services/db');
+            const { addFlashcards, logActivity } = await import('../services/db');
             await addFlashcards(user.uid, selectedSubject.id, selectedLecture.id, generatedCards);
+            await logActivity(user.uid, {
+                type: 'note',
+                text: `Generated flashcards for ${selectedLecture.title}`
+            });
 
             confetti({
                 particleCount: 100,
@@ -1037,8 +1407,12 @@ const Dashboard = ({ user, onLogout }) => {
                 return false;
             }
 
-            const { updateLectureQuiz } = await import('../services/db');
+            const { updateLectureQuiz, logActivity } = await import('../services/db');
             await updateLectureQuiz(user.uid, selectedSubject.id, selectedLecture.id, generatedQuiz);
+            await logActivity(user.uid, {
+                type: 'note',
+                text: `Generated quiz for ${selectedLecture.title}`
+            });
 
             confetti({ particleCount: 100, spread: 70, origin: { x: 0.8, y: 0.2 } });
             // setViewMode('quiz'); // Removed to keep navigation local
@@ -1058,7 +1432,7 @@ const Dashboard = ({ user, onLogout }) => {
 
                 {/* Dashboard Header - Show only if no subject selected */}
                 {!selectedSubject && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
+                    <div className="dashboard-header" style={{ marginBottom: '3rem' }}>
                         <div>
                             <motion.h1
                                 initial={{ opacity: 0, y: -20 }}
@@ -1071,9 +1445,8 @@ const Dashboard = ({ user, onLogout }) => {
                             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Select a subject to start recording or view notes.</p>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button className="btn-modern btn-glass" onClick={() => timetableRef.current.click()}>
-                                <Calendar size={20} /> Upload Timetable
-                                <input type="file" ref={timetableRef} hidden />
+                            <button className="btn-modern btn-glass" onClick={() => setShowExamModal(true)}>
+                                <Calendar size={20} /> Add Exam
                             </button>
                             <button className="btn-modern btn-solid" onClick={() => setShowSubjectModal(true)}>
                                 <Plus size={20} /> Add Subject
@@ -1111,6 +1484,7 @@ const Dashboard = ({ user, onLogout }) => {
                             generateAndSaveQuiz={generateAndSaveQuiz}
                             userId={user.uid}
                             subjectId={selectedSubject.id}
+                            removeLecture={removeLecture}
                         />
                     ) : selectedSubject ? (
                         <SubjectDetailView
@@ -1123,9 +1497,12 @@ const Dashboard = ({ user, onLogout }) => {
                             setSelectedLecture={setSelectedLecture}
                             setViewMode={setViewMode}
                             timetableRef={timetableRef}
+                            exams={exams}
+                            removeLecture={removeLecture}
+                            removeSubject={removeSubject}
                         />
                     ) : (
-                        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+                        <div className="dashboard-grid">
 
                             {/* Main Area: Subjects List */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -1161,7 +1538,7 @@ const Dashboard = ({ user, onLogout }) => {
                                                 </div>
                                                 <div style={{ position: 'relative', zIndex: 2 }}>
                                                     <div style={{ background: 'rgba(255,255,255,0.2)', width: 'fit-content', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, marginBottom: '1rem' }}>
-                                                        {sub.noteCount || 0} NOTES
+                                                        {Math.max(0, sub.noteCount || 0)} NOTES
                                                     </div>
                                                     <h3 className="google-font" style={{ fontSize: '1.4rem', margin: 0 }}>{sub.name}</h3>
                                                     <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
@@ -1212,31 +1589,103 @@ const Dashboard = ({ user, onLogout }) => {
                                 </div>
 
                                 {/* Exam Timetable Widget */}
-                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
-                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Exam Timetable</h3>
-                                    <div style={{ padding: '2rem 1rem', border: '1px dashed var(--border-color)', borderRadius: '16px', textAlign: 'center', background: 'var(--bg-secondary)' }}>
-                                        <Calendar size={32} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
-                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>No timetable uploaded yet.</p>
-                                        <button className="btn-modern btn-glass" style={{ width: '100%', fontSize: '0.8rem' }} onClick={() => timetableRef.current.click()}>
-                                            Upload PDF / Image
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                        <h3 className="google-font" style={{ fontSize: '1.1rem', margin: 0 }}>Exam Timetable</h3>
+                                        <button
+                                            className="btn-modern btn-glass"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                            onClick={() => setShowExamModal(true)}
+                                        >
+                                            <Plus size={14} /> Add
                                         </button>
                                     </div>
+                                    {exams.length === 0 ? (
+                                        <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
+                                            <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No exams scheduled yet.</p>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {exams
+                                                .filter(exam => {
+                                                    // Only show upcoming exams (today and future)
+                                                    const examDate = new Date(exam.examDate);
+                                                    const today = new Date();
+                                                    examDate.setHours(0, 0, 0, 0);
+                                                    today.setHours(0, 0, 0, 0);
+                                                    return examDate >= today;
+                                                })
+                                                .slice(0, 5)
+                                                .map((exam) => {
+                                                    const examDate = new Date(exam.examDate);
+                                                    const today = new Date();
+                                                    const daysUntil = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+                                                    return (
+                                                        <div
+                                                            key={exam.id}
+                                                            style={{
+                                                                padding: '1rem',
+                                                                background: '#f8faff',
+                                                                borderRadius: '12px',
+                                                                border: '1px solid #e1e7f0',
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center'
+                                                            }}
+                                                        >
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                                                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{exam.subjectName}</span>
+                                                                    {exam.calendarEventId && (
+                                                                        <Calendar size={14} color="var(--google-blue)" title="Synced to Google Calendar" />
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                                    {examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                    {daysUntil >= 0 && ` • ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeExam(exam.id, exam.calendarEventId)}
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    padding: '0.25rem',
+                                                                    color: 'var(--text-secondary)',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center'
+                                                                }}
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Recent Activity */}
                                 <div style={{ padding: '1rem' }}>
                                     <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Recent Activity</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                        {[
-                                            { type: 'note', text: 'Introduction to AI Notes generated' },
-                                            { type: 'exam', text: 'Maths Midterm scheduled' },
-                                            { type: 'note', text: 'History of OS cleaned' }
-                                        ].map((act, i) => (
-                                            <div key={i} style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--google-blue)', marginTop: 6 }}></div>
-                                                <span>{act.text}</span>
-                                            </div>
-                                        ))}
+                                        {recentActivities.length === 0 ? (
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No recent activity yet.</p>
+                                        ) : (
+                                            recentActivities.map((act, i) => (
+                                                <div key={act.id || i} style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--google-blue)', marginTop: 6 }}></div>
+                                                    <div>
+                                                        <span>{act.text}</span>
+                                                        <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                                                            {act.timestamp ? new Date(act.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
 
@@ -1268,7 +1717,120 @@ const Dashboard = ({ user, onLogout }) => {
                             />
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button className="btn-modern btn-glass" style={{ flex: 1 }} onClick={() => setShowSubjectModal(false)}>Cancel</button>
-                                <button className="btn-modern btn-solid" style={{ flex: 1 }} onClick={addSubject}>Create Section</button>
+                                <button className="btn-modern btn-solid" style={{ flex: 1 }} onClick={addSubject}>Create Subject</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Exam Modal */}
+            <AnimatePresence>
+                {showExamModal && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }} onClick={() => setShowExamModal(false)}>
+                        <motion.div
+                            className="lab-card"
+                            style={{ width: '100%', maxWidth: '400px', padding: '2rem', background: 'white' }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="google-font" style={{ marginBottom: '1.5rem' }}>Add Exam</h3>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Subject</label>
+                                <select
+                                    value={newExam.subjectName}
+                                    onChange={(e) => setNewExam({ ...newExam, subjectName: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '1rem',
+                                        background: 'white'
+                                    }}
+                                >
+                                    <option value="">Select a subject</option>
+                                    {subjects.map((subject) => (
+                                        <option key={subject.id} value={subject.name}>{subject.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Exam Date</label>
+                                <input
+                                    type="date"
+                                    value={newExam.examDate}
+                                    onChange={(e) => setNewExam({ ...newExam, examDate: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '1rem'
+                                    }}
+                                />
+                            </div>
+
+                            {/* Google Calendar Sync Section */}
+                            <div style={{
+                                marginBottom: '1.5rem',
+                                padding: '1rem',
+                                background: '#f8faff',
+                                borderRadius: '12px',
+                                border: '1px solid #e1e7f0'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <label style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={newExam.syncToCalendar}
+                                            onChange={(e) => setNewExam({ ...newExam, syncToCalendar: e.target.checked })}
+                                            disabled={!calendarAuthorized}
+                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                        />
+                                        <Calendar size={16} />
+                                        Sync to Google Calendar
+                                    </label>
+                                    {calendarAuthorized ? (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--google-green)', fontWeight: 600 }}>
+                                            ✓ Connected
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={handleCalendarAuth}
+                                            className="btn-modern btn-glass"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                            type="button"
+                                        >
+                                            Connect
+                                        </button>
+                                    )}
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+                                    {calendarAuthorized
+                                        ? 'Exam will be added to your Google Calendar with reminders'
+                                        : 'Connect your Google Calendar to sync exams automatically'}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button className="btn-modern btn-glass" style={{ flex: 1 }} onClick={() => setShowExamModal(false)}>Cancel</button>
+                                <button
+                                    className="btn-modern btn-solid"
+                                    style={{ flex: 1 }}
+                                    onClick={addExam}
+                                    disabled={!newExam.subjectName || !newExam.examDate}
+                                >
+                                    Add Exam
+                                </button>
                             </div>
                         </motion.div>
                     </div>

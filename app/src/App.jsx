@@ -75,17 +75,17 @@ const StarBackground = () => {
 
 const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 1.5rem' }}>
-            <div className="logo-section" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => window.scrollTo(0, 0)}>
+        <div className="container nav-container">
+            <div className="logo-section" onClick={() => window.scrollTo(0, 0)}>
                 <BookOpen className="logo-icon" size={28} />
-                <span className="logo-text google-font" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-blue)' }}>Benchmate AI</span>
+                <span className="logo-text google-font">Benchmate AI</span>
             </div>
             <div className="nav-links">
                 {!isDashboard && (
-                    <>
+                    <div className="desktop-only" style={{ display: 'flex', gap: '1.5rem' }}>
                         <a href="#features" className="nav-link">Features</a>
                         <a href="#how-it-works" className="nav-link">How it Works</a>
-                    </>
+                    </div>
                 )}
 
                 <button
@@ -97,15 +97,15 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }
                 </button>
 
                 {user ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--google-blue-light)', padding: '0.4rem 1rem', borderRadius: '20px', color: 'var(--google-blue)', fontWeight: 600, fontSize: '0.85rem' }}>
-                            <UserIcon size={16} />
-                            {user.displayName || user.email?.split('@')[0] || 'Scholar'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div className="user-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--google-blue-light)', padding: '0.4rem 0.8rem', borderRadius: '20px', color: 'var(--google-blue)', fontWeight: 600, fontSize: '0.8rem' }}>
+                            <UserIcon size={14} />
+                            <span className="desktop-only">{user.displayName || user.email?.split('@')[0] || 'Scholar'}</span>
                         </div>
                         <button
                             onClick={() => signOut(auth)}
                             className="btn-modern btn-glass"
-                            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                            style={{ padding: '0.4rem', borderRadius: '50%', width: '36px', height: '36px', justifyContent: 'center' }}
                         >
                             <LogOut size={16} />
                         </button>
@@ -114,9 +114,9 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme }
                     <button
                         onClick={onAuthClick}
                         className="btn-modern btn-solid"
-                        style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem' }}
+                        style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
                     >
-                        Login / Join Now
+                        Login
                     </button>
                 )}
             </div>

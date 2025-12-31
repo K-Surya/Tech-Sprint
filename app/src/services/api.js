@@ -11,10 +11,43 @@ export const generateNotes = async (transcript, subject) => {
         if (!response.ok) throw new Error("Failed to generate notes");
 
         const data = await response.json();
-        if (!data.notes) {
-            console.error("API returned no notes. Full response:", data);
+        console.log("DEBUG: API Response Data:", data);
+
+        let notesResult = data.notes || data.summary || data.content;
+
+        // If data itself is a string, it might be the notes
+        if (!notesResult && (typeof data === 'string')) {
+            notesResult = data;
         }
-        return data.notes;
+
+        // Handle potential double-stringified JSON or direct object
+        if (typeof notesResult === 'string' && (notesResult.startsWith('{') || notesResult.startsWith('['))) {
+            try {
+                const parsed = JSON.parse(notesResult);
+                notesResult = parsed.notes || parsed.summary || parsed.content || parsed;
+                console.log("DEBUG: Parsed internal JSON:", notesResult);
+            } catch (e) {
+                console.warn("Attempted to parse notes as JSON but failed:", e);
+            }
+        }
+
+        if (!notesResult) {
+            console.error("API returned no identifiable notes content. Full response:", data);
+            // Final fallback: stringify the whole response if it's an object, otherwise use as is
+            notesResult = typeof data === 'string' ? data : (data ? JSON.stringify(data) : null);
+        }
+
+        // Absolute last resort
+        if (!notesResult) {
+            notesResult = "No clear content found in AI response.";
+        }
+
+        const finalResult = {
+            notes: typeof notesResult === 'string' ? notesResult : JSON.stringify(notesResult),
+            title: data.title || null
+        };
+        console.log("DEBUG: Final Returning Object:", finalResult);
+        return finalResult;
     } catch (error) {
         console.error("API generateNotes error:", error);
         throw error;
