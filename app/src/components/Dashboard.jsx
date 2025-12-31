@@ -985,16 +985,10 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
 
     useEffect(() => {
         if (user) {
-<<<<<<< HEAD
-            import('../services/db').then(async ({ initializeUser, subscribeToSubjects, subscribeToExams, subscribeToRecentActivity }) => {
-                initializeUser(user);
-                const unsubscribeSubjects = subscribeToSubjects(user.uid, (data) => {
-=======
             import('../services/db').then(async ({ initializeUser, subscribeToSubjects }) => {
                 await initializeUser(user);
 
                 const unsubscribe = subscribeToSubjects(user.uid, (data) => {
->>>>>>> analytics
                     setSubjects(data);
                 });
                 const unsubscribeExams = subscribeToExams(user.uid, (data) => {
@@ -1116,72 +1110,6 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
             console.log("Starting note generation for subject:", selectedSubject.name);
             // 1. Call Backend API to generate structured notes
             const { generateNotes } = await import('../services/api');
-<<<<<<< HEAD
-            const result = await generateNotes(rawText, selectedSubject.name);
-            console.log("AI Result:", result);
-
-            if (!result || !result.notes) {
-                const faultData = result ? JSON.stringify(result).slice(0, 100) : "null/undefined";
-                console.error("Invalid AI response:", result);
-                throw new Error(`AI returned invalid format: ${faultData}`);
-            }
-
-            const structuredNotes = result.notes;
-
-            // Extract a title from the notes
-            let extractedTitle = result.title || `Lecture ${lectures.length + 1}`;
-
-            if (!result.title) {
-                const lines = structuredNotes.split('\n');
-                const subjectLower = selectedSubject.name.toLowerCase().trim();
-
-                for (const line of lines) {
-                    const cleanLine = line.trim().replace(/^[\*\#\s\_]+|[\*\#\s\_]+$/g, '');
-                    if (!cleanLine || cleanLine.length < 3) continue;
-
-                    // Skip if the extracted title is too similar to the subject name
-                    const cleanLower = cleanLine.toLowerCase();
-                    if (cleanLower === subjectLower ||
-                        cleanLower === `${subjectLower} notes` ||
-                        cleanLower === `about ${subjectLower}`) continue;
-
-                    const originalLine = line.trim();
-                    // Prioritize structured separators
-                    if (originalLine.startsWith('#') ||
-                        (originalLine.startsWith('**') && originalLine.endsWith('**')) ||
-                        originalLine.toLowerCase().startsWith('topic:') ||
-                        originalLine.toLowerCase().startsWith('title:')) {
-
-                        let crispTitle = cleanLine.replace(/^(topic|title):\s*/i, '');
-
-                        // Aggressive cleaning for crisp headings
-                        // 1. Remove academic prefixes
-                        crispTitle = crispTitle.replace(/^(understanding|introduction to|basics of|intro to|lecture:|notes on|chapter:|about|overview of)\s+/i, '');
-
-                        // 2. Handle separators and academic suffixes
-                        // Split on common separators - use the first significant part
-                        crispTitle = crispTitle.split(/[\-\–\—\:]/)[0].trim();
-
-                        // Remove academic fluff at the end
-                        crispTitle = crispTitle.replace(/\s+(an introduction|basics|notes|overview|series|lecture)$/i, '');
-
-                        // 3. Clear subject name prefix
-                        if (crispTitle.toLowerCase().includes(':')) {
-                            const parts = crispTitle.split(':');
-                            const firstPart = parts[0].toLowerCase().trim();
-                            if (firstPart === subjectLower || firstPart.includes('lecture') || firstPart.includes('notes')) {
-                                crispTitle = parts.slice(1).join(':').trim();
-                            }
-                        }
-
-                        // 4. Enforce 2-word limit for most professional look
-                        const words = crispTitle.split(/\s+/).filter(w => w.length > 0);
-                        extractedTitle = words.slice(0, 2).join(' ').replace(/[\:\-\s]+$/, '').trim();
-                        break;
-                    }
-                }
-            }
-=======
 
             // Clean the text before sending to AI
             const cleanedTranscript = cleanText(rawText);
@@ -1191,7 +1119,6 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
 
             const structuredNotes = await generateNotes(cleanedTranscript, selectedSubject.name);
             if (!structuredNotes) throw new Error("No notes returned from AI");
->>>>>>> analytics
 
             // 2. Save both raw and structured (or just structured)
             // Storing structuredNotes as the main 'transcript' used for study
@@ -1494,15 +1421,9 @@ const Dashboard = ({ user, onLogout, profileRequest, userProfile, setUserProfile
         <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent' }}>
             <div className="container" style={{ padding: '2rem 1rem' }}>
 
-<<<<<<< HEAD
-                {/* Dashboard Header - Show only if no subject selected */}
-                {!selectedSubject && (
-                    <div className="dashboard-header" style={{ marginBottom: '3rem' }}>
-=======
                 {/* Dashboard Header - Show only if no subject selected AND not in profile mode */}
                 {!selectedSubject && viewMode === 'subject' && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '2rem' }}>
->>>>>>> analytics
                         <div>
                             <motion.h1
                                 initial={{ opacity: 0, y: -20 }}
