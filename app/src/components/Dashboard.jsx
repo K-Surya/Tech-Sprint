@@ -31,7 +31,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { cleanText } from '../utils/textCleaner';
+
+// Helper functions defined at module scope
+const parseLocalDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
+const cleanText = (text) => {
+    return text.replace(/\s+/g, ' ').trim();
+};
+
+
 import AvatarSelection, { avatars } from './AvatarSelection';
 
 // --- Flashcard Component ---
@@ -807,14 +819,15 @@ const SubjectDetailView = ({
     removeSubject,
     setShowExamModal,
     setNewExam,
-    generateAndSaveRoadmap
+    generateAndSaveRoadmap,
+    setViewMode
 }) => {
     const [generatingRoadmap, setGeneratingRoadmap] = useState(false);
+
     const subjectExams = exams.filter(e => {
         const match = e.subjectName?.trim().toLowerCase() === selectedSubject.name?.trim().toLowerCase();
         if (!match) return false;
 
-        // Only show upcoming exams
         const examDate = parseLocalDate(e.examDate);
         const today = new Date();
         examDate.setHours(0, 0, 0, 0);
@@ -834,7 +847,7 @@ const SubjectDetailView = ({
                     className="btn-modern btn-glass"
                     style={{ padding: '0.6rem', borderRadius: '50%' }}
                 >
-                    <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
+                    <ArrowLeft size={24} />
                 </button>
                 <div>
                     <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
@@ -853,73 +866,49 @@ const SubjectDetailView = ({
             </div>
 
             <div className="dashboard-grid">
-                {/* Main Area: Audio Lab & Notes */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    {/* Isolated Recorder Component */}
                     <AudioRecorder onSave={saveLectureToDB} />
-
-                    {/* Recent Lectures List (New) */}
                     <div>
                         <h3 className="google-font" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Your Lectures</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                             {lectures.length === 0 && (
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', width: '100%', fontStyle: 'italic' }}>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>
                                     No lectures recorded yet. Start recording above!
                                 </p>
                             )}
-                            {lectures.map((lecture, i) => {
-                                const lectureNumber = lectures.length - i;
-                                // Use the exact same gradient as the home page (brand blue)
-                                const bg = 'var(--grad-primary)';
-
-                                return (
-                                    <div
-                                        key={lecture.id}
-                                        onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
-                                        style={{
-                                            background: bg,
-                                            borderRadius: '20px',
-                                            padding: '1.5rem',
-                                            cursor: 'pointer',
-                                            border: 'none',
-                                            transition: 'all 0.2s ease',
-                                            color: 'white',
-                                            boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-                                        }}
-                                        className="lecture-card-hover"
-                                    >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.4rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <FileText size={20} />
-                                            </div>
-                                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 600 }}>
-                                                {i === 0 ? 'LATEST' : 'SAVED'}
-                                            </div>
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>
-                                            {selectedSubject.name}
-                                        </div>
-                                        <h4 className="google-font" style={{ margin: '0 0 0.8rem 0', fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                            {lecture.title}
-                                        </h4>
-                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: 'auto' }}>
-                                            <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
-                                        </div>
+                            {lectures.map((lecture, i) => (
+                                <div
+                                    key={lecture.id}
+                                    onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
+                                    style={{
+                                        background: 'var(--grad-primary)',
+                                        borderRadius: '20px',
+                                        padding: '1.5rem',
+                                        cursor: 'pointer',
+                                        color: 'white',
+                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                    }}
+                                    className="lecture-card-hover"
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.4rem', borderRadius: '10px' }}><FileText size={20} /></div>
+                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem' }}>{i === 0 ? 'LATEST' : 'SAVED'}</div>
                                     </div>
-                                )
-                            })}
+                                    <h4 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{lecture.title}</h4>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}><Clock size={12} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString()}</div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Sidebar */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h3 className="google-font" style={{ fontSize: '1.1rem', margin: 0 }}>Next Exam</h3>
                             <button
                                 className="btn-modern btn-glass"
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                style={{ padding: '0.4rem 0.8rem' }}
                                 onClick={() => {
                                     setNewExam(prev => ({ ...prev, subjectName: selectedSubject.name }));
                                     setShowExamModal(true);
@@ -928,100 +917,47 @@ const SubjectDetailView = ({
                                 <Plus size={14} /> Add
                             </button>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
                             {subjectExams.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                    <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-                                    <p>No exams scheduled for this subject.</p>
+                                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    <p>No exams scheduled.</p>
                                 </div>
                             ) : (
-                                subjectExams.map((exam, i) => (
-                                    <div key={exam.id || i} style={{
-                                        background: 'var(--grad-hero)',
-                                        padding: '1rem',
-                                        borderRadius: '16px',
-                                        border: '1px solid var(--border-color)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '1rem'
-                                    }}>
-                                        <div style={{ background: 'white', padding: '0.5rem', borderRadius: '12px', color: 'var(--google-red)' }}>
-                                            <Calendar size={20} />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{exam.subjectName}</div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                                {new Date(exam.examDate).toLocaleDateString(undefined, {
-                                                    weekday: 'short',
-                                                    month: 'short',
-                                                    day: 'numeric'
-                                                })}
-                                            </div>
-                                        </div>
+                                subjectExams.slice(0, 2).map((exam, i) => (
+                                    <div key={exam.id || i} style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <Calendar size={18} color="var(--google-red)" />
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{new Date(exam.examDate).toLocaleDateString()}</div>
                                     </div>
                                 ))
                             )}
                         </div>
 
-                        {selectedSubject.roadmap ? (
-                            <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-                                <h4 className="google-font" style={{ fontSize: '0.95rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Sparkles size={16} color="var(--google-blue)" /> Your Study Roadmap
-                                </h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    {selectedSubject.roadmap.map((phase, idx) => (
-                                        <div key={idx} style={{
-                                            padding: '1rem',
-                                            background: 'var(--bg-secondary)',
-                                            borderRadius: '12px',
-                                            borderLeft: `4px solid ${['#4285F4', '#34A853', '#FBBC05', '#EA4335'][idx % 4]}`
-                                        }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.3rem', opacity: 0.8 }}>
-                                                <span>{phase.phaseName}</span>
-                                                <span>{phase.duration}</span>
-                                            </div>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem' }}>{phase.focus}</div>
-                                            <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                                {phase.tasks.slice(0, 2).map((t, i) => <li key={i}>{t}</li>)}
-                                            </ul>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button
-                                    className="btn-modern btn-glass"
-                                    style={{ marginTop: '1rem', width: '100%', fontSize: '0.8rem', padding: '0.6rem' }}
-                                    onClick={async () => {
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
+                            <button
+                                className="btn-modern btn-solid"
+                                style={{ width: '100%', padding: '0.8rem', background: 'var(--grad-primary)', border: 'none' }}
+                                onClick={async () => {
+                                    if (selectedSubject.roadmap) {
+                                        setViewMode('roadmap');
+                                    } else {
                                         setGeneratingRoadmap(true);
                                         await generateAndSaveRoadmap();
                                         setGeneratingRoadmap(false);
-                                    }}
-                                    disabled={generatingRoadmap}
-                                >
-                                    {generatingRoadmap ? (
-                                        <><Loader2 size={14} className="animate-spin" /> Regenerating...</>
-                                    ) : (
-                                        'Regenerate Roadmap'
-                                    )}
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                className="btn-modern btn-solid"
-                                style={{ marginTop: '1.5rem', width: '100%', fontSize: '0.9rem', padding: '0.8rem' }}
-                                onClick={async () => {
-                                    setGeneratingRoadmap(true);
-                                    await generateAndSaveRoadmap();
-                                    setGeneratingRoadmap(false);
+                                    }
                                 }}
                                 disabled={generatingRoadmap}
                             >
                                 {generatingRoadmap ? (
-                                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
+                                    <><Loader2 size={18} className="spinner" /> Generating...</>
                                 ) : (
-                                    <><Sparkles size={16} /> Generate Study Roadmap</>
+                                    <><Sparkles size={18} /> {selectedSubject.roadmap ? 'View Study Roadmap' : 'Generate Study Roadmap'}</>
                                 )}
                             </button>
-                        )}
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '0.8rem' }}>
+                                Powered by AI pipeline integration.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1228,6 +1164,151 @@ const ProfileView = ({ onBack, user, userProfile, setUserProfile, setViewMode })
     );
 };
 
+const RoadmapView = ({ subject, onBack, onGenerate }) => {
+    const [generating, setGenerating] = useState(false);
+
+    if (!subject.roadmap) {
+        return (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+                <div style={{ background: 'white', padding: '3rem', borderRadius: '32px', maxWidth: '600px', margin: '0 auto', border: '1px solid var(--border-color)' }}>
+                    <Sparkles size={48} color="var(--google-blue)" style={{ marginBottom: '1.5rem' }} />
+                    <h2 className="google-font">No Roadmap Generated Yet</h2>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                        Create a 7-day master plan specifically for your upcoming {subject.name} exam based on all your lecture notes.
+                    </p>
+                    <button
+                        className="btn-modern btn-solid"
+                        style={{ padding: '1rem 2.5rem' }}
+                        onClick={async () => {
+                            setGenerating(true);
+                            await onGenerate();
+                            setGenerating(false);
+                        }}
+                        disabled={generating}
+                    >
+                        {generating ? (
+                            <><Loader2 size={20} className="spinner" /> Crafting your plan...</>
+                        ) : (
+                            <><Sparkles size={20} /> Generate Mastery Roadmap</>
+                        )}
+                    </button>
+                    <div style={{ marginTop: '1.5rem' }}>
+                        <button onClick={onBack} className="btn-modern btn-glass">Maybe later</button>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
+
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ padding: '0.6rem', borderRadius: '50%' }}>
+                    <ArrowLeft size={24} />
+                </button>
+                <div>
+                    <h2 className="google-font" style={{ margin: 0, fontSize: '2.5rem' }}>Full Study Roadmap</h2>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Step-by-step strategy for {subject.name}</p>
+                </div>
+                <button
+                    className="btn-modern btn-glass"
+                    style={{ marginLeft: 'auto' }}
+                    onClick={async () => {
+                        setGenerating(true);
+                        await onGenerate();
+                        setGenerating(false);
+                    }}
+                    disabled={generating}
+                >
+                    {generating ? <Loader2 size={16} className="spinner" /> : <RefreshCw size={16} />}
+                    Regenerate
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {subject.roadmap.map((phase, idx) => (
+                    <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        style={{
+                            background: 'white',
+                            padding: '2.5rem',
+                            borderRadius: '32px',
+                            border: '1px solid var(--border-color)',
+                            boxShadow: 'var(--shadow-sm)',
+                            position: 'relative',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <div style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '8px',
+                            background: ['#4285F4', '#34A853', '#FBBC05', '#EA4335'][idx % 4]
+                        }} />
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                            <div>
+                                <span style={{
+                                    fontSize: '0.8rem',
+                                    fontWeight: 800,
+                                    color: ['#4285F4', '#34A853', '#FBBC05', '#EA4335'][idx % 4],
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '2px'
+                                }}>
+                                    {phase.duration}
+                                </span>
+                                <h3 className="google-font" style={{ fontSize: '1.8rem', margin: '0.5rem 0' }}>{phase.phaseName}</h3>
+                            </div>
+                            <div style={{
+                                background: 'var(--bg-secondary)',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '12px',
+                                fontSize: '0.9rem',
+                                fontWeight: 600
+                            }}>
+                                Focus: {phase.focus}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                            {phase.tasks.map((task, i) => (
+                                <div key={i} style={{
+                                    display: 'flex',
+                                    gap: '1rem',
+                                    padding: '1rem',
+                                    background: 'var(--bg-secondary)',
+                                    borderRadius: '16px',
+                                    alignItems: 'center'
+                                }}>
+                                    <div style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        borderRadius: '50%',
+                                        border: '2px solid var(--border-color)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 800
+                                    }}>
+                                        {i + 1}
+                                    </div>
+                                    <span style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{task}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+        </motion.div>
+    );
+};
+
 const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity, userProfile, setUserProfile }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
@@ -1255,12 +1336,6 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
     // userProfile is passed from App.jsx
 
 
-    // Help fix timezone issues with date comparisons
-    const parseLocalDate = (dateStr) => {
-        if (!dateStr) return new Date();
-        const [y, m, d] = dateStr.split('-').map(Number);
-        return new Date(y, m - 1, d);
-    };
 
     useEffect(() => {
         const unsubscribes = [];
@@ -1619,13 +1694,14 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
             // Get lecture titles as topics
             const topics = lectures.map(l => l.title);
 
-            const roadmapResult = await generateRoadmap(selectedSubject.name, examDate, topics);
+            const roadmapResult = await generateRoadmap(selectedSubject.name, examDate, lectures);
             await saveSubjectRoadmap(user.uid, selectedSubject.id, roadmapResult);
             await logActivity(user.uid, {
                 type: 'roadmap',
                 text: `Generated study roadmap for ${selectedSubject.name}`
             });
             console.log("✅ Roadmap saved!");
+            setViewMode('roadmap'); // Navigate to the new view
         } catch (error) {
             console.error("❌ Roadmap error:", error);
             alert("Roadmap generation failed. Please ensure your local backend is running on port 5000 and has a valid Gemini API key.");
@@ -1808,7 +1884,14 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
 
                 <AnimatePresence mode="wait">
                     {/* View Router */}
-                    {viewMode === 'flashcards' && selectedLecture ? (
+                    {viewMode === 'roadmap' && selectedSubject ? (
+                        <RoadmapView
+                            key="roadmap"
+                            subject={selectedSubject}
+                            onBack={() => setViewMode('subject')}
+                            onGenerate={generateAndSaveRoadmap}
+                        />
+                    ) : viewMode === 'flashcards' && selectedLecture ? (
                         <FlashcardDeck
                             key="flashcards"
                             userId={user.uid}

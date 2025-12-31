@@ -149,12 +149,12 @@ export const generateFlashcards = async (lectureContent, subject) => {
     }
 };
 
-export const generateRoadmap = async (subject, examDate, topics = []) => {
+export const generateRoadmap = async (subject, examDate, lectures = []) => {
     try {
         const response = await fetch(`${BASE_URL}/roadmap`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ subject, examDate, topics }),
+            body: JSON.stringify({ subject, examDate, lectures }),
         });
 
         if (!response.ok) throw new Error("Failed to generate roadmap");
