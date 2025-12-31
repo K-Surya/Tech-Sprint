@@ -1132,7 +1132,7 @@ const SettingsView = ({ onBack, user, glassIntensity, setGlassIntensity }) => {
     );
 };
 
-const ProfileView = ({ onBack, user }) => {
+const ProfileView = ({ onBack, user, userProfile, setUserProfile, setViewMode }) => {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -1140,30 +1140,90 @@ const ProfileView = ({ onBack, user }) => {
             exit={{ opacity: 0, scale: 1.05 }}
             style={{ maxWidth: '600px', margin: '4rem auto', padding: '3rem', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', borderRadius: '32px', border: '1px solid var(--border-color)', textAlign: 'center' }}
         >
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ marginRight: '1rem', padding: '0.5rem' }}>
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="google-font" style={{ margin: 0, fontSize: '1.5rem' }}>My Profile</h2>
+            </div>
+
             <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 2rem' }}>
-                <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, var(--google-blue), var(--google-purple))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                    <UserIcon size={60} />
-                </div>
-                <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--google-green)', padding: '0.5rem', borderRadius: '50%', border: '4px solid var(--glass-bg)' }}>
-                    <CheckCircle2 size={16} color="white" />
-                </div>
+                <img
+                    src={(avatars && avatars.find(a => a.id === userProfile?.avatar)?.src) || (avatars && avatars[0]?.src)}
+                    alt="Profile"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', border: '4px solid white', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
+                />
+                <button
+                    onClick={() => setViewMode('select-avatar')}
+                    style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        background: 'var(--google-blue)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '36px',
+                        height: '36px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    <RefreshCw size={16} />
+                </button>
             </div>
 
-            <h2 className="google-font" style={{ fontSize: '2rem', margin: '0 0 0.5rem' }}>{user.displayName || user.email?.split('@')[0]}</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{user.email}</p>
+            <h3 style={{ fontSize: '1.8rem', marginBottom: '0.5rem', fontWeight: 700 }}>{userProfile?.nickname || user.displayName}</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{user.email}</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                Joined: {userProfile?.joinedAt?.seconds
+                    ? new Date(userProfile.joinedAt.seconds * 1000).toLocaleDateString()
+                    : user.metadata?.creationTime
+                        ? new Date(user.metadata.creationTime).toLocaleDateString()
+                        : 'Just now'}
+            </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '20px' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-blue)' }}>12</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Lectures</div>
-                </div>
-                <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '20px' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--google-green)' }}>85%</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Avg Score</div>
+            <div style={{ textAlign: 'left', marginTop: '3rem', padding: '2rem', background: 'white', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
+                <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Account Settings</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Nickname</label>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <input
+                                type="text"
+                                defaultValue={userProfile?.nickname || user.displayName}
+                                id="nickname-input"
+                                style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: '#f8faff', color: 'var(--text-primary)' }}
+                            />
+                            <button
+                                className="btn-modern btn-solid"
+                                onClick={async () => {
+                                    const newNickname = document.getElementById('nickname-input').value;
+                                    if (newNickname.trim()) {
+                                        try {
+                                            const { updateUserProfile } = await import('../services/db');
+                                            await updateUserProfile(user.uid, { nickname: newNickname });
+                                            // Optimistic update
+                                            if (setUserProfile) {
+                                                setUserProfile(prev => ({ ...prev, nickname: newNickname }));
+                                            }
+                                            alert("Nickname updated!");
+                                        } catch (e) {
+                                            console.error("Error updating nickname:", e);
+                                            alert("Failed to update nickname.");
+                                        }
+                                    }
+                                }}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <button onClick={onBack} className="btn-modern btn-solid" style={{ width: '100%', padding: '1rem' }}>Return to Dashboard</button>
         </motion.div>
     );
 };
@@ -1789,7 +1849,28 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
                             key="profile"
                             onBack={() => setViewMode('subject')}
                             user={user}
+                            userProfile={userProfile}
+                            setUserProfile={setUserProfile}
+                            setViewMode={setViewMode}
                         />
+                    ) : viewMode === 'select-avatar' ? (
+                        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                                <button onClick={() => setViewMode('profile')} className="btn-modern btn-glass" style={{ marginRight: '1rem' }}>
+                                    <ArrowLeft size={20} />
+                                </button>
+                                <h2 className="google-font" style={{ margin: 0 }}>Change Avatar</h2>
+                            </div>
+                            <div className="lab-card" style={{ background: 'white', borderRadius: '24px', padding: '1rem' }}>
+                                <AvatarSelection
+                                    onSelect={async (id) => {
+                                        await handleAvatarSave(id);
+                                        setViewMode('profile');
+                                    }}
+                                    initialAvatar={userProfile?.avatar}
+                                />
+                            </div>
+                        </div>
                     ) : selectedSubject ? (
                         <SubjectDetailView
                             key="subject"

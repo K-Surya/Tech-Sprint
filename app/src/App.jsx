@@ -111,7 +111,7 @@ const Hero = ({ onActionClick }) => (
     </section>
 );
 
-const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme, onMenuClick }) => (
+const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, toggleTheme, onMenuClick }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
         <div className={isDashboard ? "" : "container"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: isDashboard ? '0 2rem' : '0 1.5rem', maxWidth: isDashboard ? '100%' : '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -148,9 +148,19 @@ const Navbar = ({ scrolled, user, onAuthClick, isDashboard, theme, toggleTheme, 
 
                 {user ? (
                     <div className="user-profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--google-blue-light)', padding: '0.4rem 1rem', borderRadius: '20px', color: 'var(--google-blue)', fontWeight: 600, fontSize: '0.85rem' }}>
-                            <UserIcon size={16} />
-                            {user.displayName || user.email?.split('@')[0] || 'Scholar'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.4rem 1rem 0.4rem 0.5rem', borderRadius: '30px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>
+                            {userProfile?.avatar ? (
+                                <img
+                                    src={avatars.find(a => a.id === userProfile.avatar)?.src || avatars[0].src}
+                                    alt="Avatar"
+                                    style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
+                                />
+                            ) : (
+                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--google-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                                    <UserIcon size={16} />
+                                </div>
+                            )}
+                            <span>{userProfile?.nickname || user.displayName || user.email?.split('@')[0] || 'Scholar'}</span>
                         </div>
                     </div>
                 ) : (
@@ -711,6 +721,7 @@ function App() {
                 <Navbar
                     scrolled={scrolled}
                     user={currentUser}
+                    userProfile={userProfile}
                     onAuthClick={() => setShowAuth(true)}
                     isDashboard={true}
                     theme={theme}
@@ -740,7 +751,7 @@ function App() {
             <div className="bg-gradient-layer" />
             <div className="ombre-glow glow-1" />
             <div className="ombre-glow glow-2" />
-            <Navbar scrolled={scrolled} user={currentUser} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
+            <Navbar scrolled={scrolled} user={currentUser} userProfile={userProfile} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
             <Hero onActionClick={handleActionClick} />
             <PainPoints />
             <Features />
