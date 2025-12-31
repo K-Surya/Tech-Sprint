@@ -1309,7 +1309,7 @@ const RoadmapView = ({ subject, onBack, onGenerate }) => {
     );
 };
 
-const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity, userProfile, setUserProfile }) => {
+const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity, userProfile, setUserProfile }) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
