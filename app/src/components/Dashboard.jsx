@@ -1948,7 +1948,7 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
                                 </button>
                                 <h2 className="google-font" style={{ margin: 0 }}>Change Avatar</h2>
                             </div>
-                            <div className="lab-card" style={{ background: 'white', borderRadius: '24px', padding: '1rem' }}>
+                            <div className="lab-card" style={{ background: 'var(--bg-color)', borderRadius: '24px', padding: '1rem' }}>
                                 <AvatarSelection
                                     onSelect={async (id) => {
                                         await handleAvatarSave(id);
