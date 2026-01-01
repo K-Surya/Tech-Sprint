@@ -46,6 +46,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import { avatars } from './components/AvatarSelection';
 import LiquidEther from './components/LiquidEther';
+import Plasma from './components/Plasma';
 
 // --- Decorative Components ---
 
@@ -754,30 +755,17 @@ function App() {
 
     return (
         <div className="app-container landing-page" style={{ position: 'relative', background: '#000000', color: '#ffffff' }}>
-            <LiquidEther
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    zIndex: 0,
-                    pointerEvents: 'none'
-                }}
-                colors={['#1a73e8', '#4285f4', '#8ab4f8', '#1e88e5']}
-                autoDemo={true}
-                resolution={0.6}
-                autoSpeed={1.0}
-                mouseForce={40}
-                autoIntensity={4.0}
-                isViscous={true}
-                viscous={15}
-                dt={0.02}
-                autoResumeDelay={0}
-                interaction={false}
-            />
-            <div className="ombre-glow glow-1" style={{ zIndex: 1 }} />
-            <div className="ombre-glow glow-2" style={{ zIndex: 1 }} />
+
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
+                <Plasma
+                    color="#1a10ff"
+                    speed={1.0}
+                    direction="forward"
+                    scale={1.1}
+                    opacity={0.9}
+                    mouseInteractive={true}
+                />
+            </div>
             <div style={{ position: 'relative', zIndex: 2 }}>
                 <Navbar scrolled={scrolled} user={currentUser} userProfile={userProfile} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
                 <Hero onActionClick={handleActionClick} />

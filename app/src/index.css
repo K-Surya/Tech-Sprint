@@ -111,13 +111,13 @@ body {
 }
 
 .glow-1 {
-  background: var(--google-blue);
+  background: #7c66dc;
   top: -200px;
   right: -200px;
 }
 
 .glow-2 {
-  background: var(--google-green);
+  background: #b19ee7;
   bottom: -200px;
   left: -200px;
   animation-delay: -5s;
