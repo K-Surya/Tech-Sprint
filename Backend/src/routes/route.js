@@ -4,6 +4,7 @@ import generateQuiz from "../services/gemini-quiz.js";
 import generateFlashcards from "../services/gemini-flashcards.js";
 import { processQuizData, generateRoadmapForSubject } from "../services/pipeline.service.js";
 import generateRoadmap from "../services/gemini-roadmap.js";
+import { getLearningCurveData } from "./analytics.controller.js";
 
 const router = express.Router();
 
@@ -95,5 +96,7 @@ router.post("/roadmap", async (req, res) => {
     res.status(500).json({ error: "Failed to generate roadmap" });
   }
 });
+
+router.post("/learning-curve/:userId", getLearningCurveData);
 
 export default router;

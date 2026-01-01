@@ -56,26 +56,35 @@ const AvatarSelection = ({ onSelect, initialAvatar = null, isOnboarding = false 
               onClick={() => setSelected(avatar.id)}
               style={{
                 cursor: 'pointer',
-                background: isSelected ? 'var(--google-blue-light)' : 'white',
-                border: isSelected ? '2px solid var(--google-blue)' : '2px solid transparent',
+                background: isSelected ? 'rgba(66, 133, 244, 0.1)' : 'var(--bg-secondary)',
+                border: isSelected ? '2px solid var(--google-blue)' : '2px solid var(--border-color)',
                 borderRadius: '24px',
-                padding: '1rem',
+                padding: '1.5rem',
                 position: 'relative',
-                boxShadow: isSelected ? '0 8px 16px rgba(66, 133, 244, 0.2)' : '0 4px 6px rgba(0,0,0,0.05)',
-                transition: 'all 0.2s'
+                boxShadow: isSelected ? '0 8px 16px rgba(66, 133, 244, 0.2)' : '0 4px 6px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem'
               }}
             >
               <img
                 src={avatar.src}
                 alt={avatar.label}
-                style={{ width: '100%', height: 'auto', marginBottom: '0.5rem' }}
+                style={{ width: '80%', height: 'auto', borderRadius: '12px' }}
               />
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isSelected ? 'var(--google-blue)' : 'var(--text-primary)' }}>
+              <div style={{
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                color: isSelected ? 'var(--google-blue)' : 'var(--text-primary)',
+                textAlign: 'center'
+              }}>
                 {avatar.label}
               </div>
               {isSelected && (
-                <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                  <CheckCircle2 size={20} fill="var(--google-blue)" color="white" />
+                <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                  <CheckCircle2 size={24} fill="var(--google-blue)" color="white" />
                 </div>
               )}
             </motion.div>

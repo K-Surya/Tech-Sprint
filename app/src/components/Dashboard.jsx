@@ -42,6 +42,7 @@ const parseLocalDate = (dateStr) => {
 import AvatarSelection, { avatars } from './AvatarSelection';
 import { cleanText } from '../utils/textCleaner';
 import DoodleBackground from './DoodleBackground';
+import LearningCurveView from './LearningCurveView';
 
 // --- Flashcard Component ---
 const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => {
@@ -1944,6 +1945,13 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
                             userId={user.uid}
                             subjectId={selectedSubject.id}
                         />
+                    ) : viewMode === 'learningCurve' ? (
+                        <LearningCurveView
+                            key="learningCurve"
+                            onBack={() => setViewMode('subject')}
+                            userId={user.uid}
+                            subjects={subjects}
+                        />
                     ) : viewMode === 'settings' ? (
                         <SettingsView
                             key="settings"
@@ -1969,7 +1977,7 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
                                 </button>
                                 <h2 className="google-font" style={{ margin: 0 }}>Change Avatar</h2>
                             </div>
-                            <div className="lab-card" style={{ background: 'white', borderRadius: '24px', padding: '1rem' }}>
+                            <div className="lab-card" style={{ background: 'var(--bg-color)', borderRadius: '24px', padding: '1rem' }}>
                                 <AvatarSelection
                                     onSelect={async (id) => {
                                         await handleAvatarSave(id);
