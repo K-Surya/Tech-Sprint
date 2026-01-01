@@ -45,6 +45,7 @@ const cleanText = (text) => {
 
 
 import AvatarSelection, { avatars } from './AvatarSelection';
+import DoodleBackground from './DoodleBackground';
 
 // --- Flashcard Component ---
 // --- Flashcard Component --- //
@@ -1853,8 +1854,9 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
     }
 
     return (
-        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent' }}>
-            <div className="container" style={{ padding: '2rem 1rem' }}>
+        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent', position: 'relative' }}>
+            <DoodleBackground opacity={0.25} />
+            <div className="container" style={{ padding: '2rem 1rem', position: 'relative', zIndex: 1 }}>
 
                 {/* Dashboard Header - Show only if on main overview (no subject selected and not in settings/profile) */}
                 {!selectedSubject && viewMode === 'subject' && (
