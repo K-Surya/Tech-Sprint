@@ -251,6 +251,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
                                         key={item.label}
                                         onClick={() => {
                                             if (item.label === 'Dashboard') onNavigate(null, 'subject');
+                                            else if (item.label === 'Learning Curve') onNavigate(null, 'learningCurve');
                                             onClose();
                                         }}
                                         style={{

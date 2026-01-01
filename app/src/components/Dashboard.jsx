@@ -41,6 +41,7 @@ const parseLocalDate = (dateStr) => {
 
 import AvatarSelection, { avatars } from './AvatarSelection';
 import { cleanText } from '../utils/textCleaner';
+import LearningCurveView from './LearningCurveView';
 
 // --- Flashcard Component ---
 // --- Flashcard Component --- //
@@ -1914,6 +1915,13 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
                             generateAndSaveQuiz={generateAndSaveQuiz}
                             userId={user.uid}
                             subjectId={selectedSubject.id}
+                        />
+                    ) : viewMode === 'learningCurve' ? (
+                        <LearningCurveView
+                            key="learningCurve"
+                            onBack={() => setViewMode('subject')}
+                            userId={user.uid}
+                            subjects={subjects}
                         />
                     ) : viewMode === 'settings' ? (
                         <SettingsView

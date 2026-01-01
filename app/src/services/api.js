@@ -166,3 +166,24 @@ export const generateRoadmap = async (subject, examDate, lectures = []) => {
         throw error;
     }
 };
+
+export const fetchLearningCurveData = async (userId, subjects) => {
+    try {
+        const response = await fetch(`${BASE_URL}/learning-curve/${userId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subjects }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch learning curve data: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data.data || [];
+    } catch (error) {
+        console.error("API fetchLearningCurveData error:", error);
+        throw error;
+    }
+};
+
