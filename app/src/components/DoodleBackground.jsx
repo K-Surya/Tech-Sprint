@@ -1,7 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import doodleImg from '../assets/doodle_grey_white.png';
 
 const DoodleBackground = ({ opacity = 0.15 }) => {
+    const [isDark, setIsDark] = useState(false);
+
+    useEffect(() => {
+        // Check initial theme
+        const checkTheme = () => {
+            const theme = document.documentElement.getAttribute('data-theme');
+            setIsDark(theme === 'dark');
+        };
+
+        checkTheme();
+
+        // Watch for theme changes
+        const observer = new MutationObserver(checkTheme);
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
+
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <div
             style={{
@@ -26,6 +47,7 @@ const DoodleBackground = ({ opacity = 0.15 }) => {
                     backgroundRepeat: 'repeat',
                     backgroundSize: '400px',
                     opacity: opacity,
+                    filter: isDark ? 'invert(1) brightness(0.6)' : 'none',
                     animation: 'doodle-drift 60s linear infinite'
                 }}
             />
