@@ -42,6 +42,7 @@ const parseLocalDate = (dateStr) => {
 import AvatarSelection, { avatars } from './AvatarSelection';
 import { cleanText } from '../utils/textCleaner';
 import DoodleBackground from './DoodleBackground';
+import StudySessionsView from './StudySessionsView';
 
 // --- Flashcard Component ---
 const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => {
@@ -1951,6 +1952,11 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
                             user={user}
                             glassIntensity={glassIntensity}
                             setGlassIntensity={setGlassIntensity}
+                        />
+                    ) : viewMode === 'study-sessions' ? (
+                        <StudySessionsView
+                            key="study-sessions"
+                            onBack={() => setViewMode('subject')}
                         />
                     ) : viewMode === 'profile' ? (
                         <ProfileView

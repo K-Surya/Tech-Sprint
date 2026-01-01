@@ -47,6 +47,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { avatars } from './components/AvatarSelection';
 import LiquidEther from './components/LiquidEther';
 import Plasma from './components/Plasma';
+import StudySessionsView from './components/StudySessionsView';
 
 // --- Decorative Components ---
 
@@ -183,7 +184,7 @@ const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, 
     </nav>
 );
 
-const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, currentSubject }) => {
+const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, currentSubject, onStudyTimer }) => {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -249,7 +250,11 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
                                         key={item.label}
                                         onClick={() => {
                                             if (item.label === 'Dashboard') onNavigate(null, 'subject');
-                                            onClose();
+                                            else if (item.label === 'Study Sessions') {
+                                                onStudyTimer();
+                                                onClose();
+                                            }
+                                            else onClose();
                                         }}
                                         style={{
                                             display: 'flex',
@@ -722,6 +727,10 @@ function App() {
                         setViewMode(mode);
                     }}
                     currentSubject={selectedSubject}
+                    onStudyTimer={() => {
+                        setViewMode('study-sessions');
+                        setSelectedSubject(null);
+                    }}
                 />
 
                 <Navbar
