@@ -46,6 +46,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import { avatars } from './components/AvatarSelection';
 import LiquidEther from './components/LiquidEther';
+import Plasma from './components/Plasma';
 
 // --- Decorative Components ---
 
@@ -61,10 +62,7 @@ const Hero = ({ onActionClick }) => (
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
             >
-                <div className="hero-badge">
-                    <Sparkles size={16} />
-                    <span>AI-Powered Learning Companion</span>
-                </div>
+
 
                 <h1 className="hero-title">
                     From Lecture Noise to <br />
@@ -757,30 +755,17 @@ function App() {
 
     return (
         <div className="app-container landing-page" style={{ position: 'relative', background: '#000000', color: '#ffffff' }}>
-            <LiquidEther
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    zIndex: 0,
-                    pointerEvents: 'none'
-                }}
-                colors={['#1a73e8', '#4285f4', '#8ab4f8', '#1e88e5']}
-                autoDemo={true}
-                resolution={0.6}
-                autoSpeed={1.0}
-                mouseForce={30}
-                autoIntensity={2.5}
-                isViscous={true}
-                viscous={15}
-                dt={0.02}
-                autoResumeDelay={500}
-            />
-            {/* <div className="bg-gradient-layer" style={{ zIndex: 1 }} /> */}
-            <div className="ombre-glow glow-1" style={{ zIndex: 1 }} />
-            <div className="ombre-glow glow-2" style={{ zIndex: 1 }} />
+
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
+                <Plasma
+                    color="#1a10ff"
+                    speed={1.0}
+                    direction="forward"
+                    scale={1.1}
+                    opacity={0.9}
+                    mouseInteractive={true}
+                />
+            </div>
             <div style={{ position: 'relative', zIndex: 2 }}>
                 <Navbar scrolled={scrolled} user={currentUser} userProfile={userProfile} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
                 <Hero onActionClick={handleActionClick} />
@@ -794,7 +779,7 @@ function App() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '3rem' }}>
                         <div style={{ maxWidth: '400px' }}>
                             <span className="footer-logo">Benchmate AI</span>
-                            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                            <p style={{ lineHeight: 1.6 }}>
                                 The world's most student-friendly lecture companion.
                             </p>
                             <div className="impact-quote">
@@ -804,7 +789,7 @@ function App() {
                         <div>
                             <h4 style={{ marginBottom: '1.5rem' }}>Resources</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <a href="#" className="nav-link">College Brand Kit</a>
+
                                 <a href="#" className="nav-link">Privacy Policy</a>
                             </div>
                         </div>
@@ -814,13 +799,13 @@ function App() {
                                 <a href="mailto:support@benchmateai.temp" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Sparkles size={16} /> support@benchmateai.temp
                                 </a>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                <p style={{ fontSize: '0.85rem' }}>
                                     Available Mon-Fri <br /> 9:00 AM - 6:00 PM
                                 </p>
                             </div>
                         </div>
                     </div>
-                    <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '1px solid var(--border-color)', textAlign: 'center', fontSize: '0.85rem' }}>
                         © 2025 Benchmate AI • Built for GDG Hackathon
                     </div>
                 </div>

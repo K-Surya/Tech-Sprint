@@ -167,7 +167,7 @@
     line-height: 1.1;
     font-weight: 800;
     margin-bottom: 1.5rem;
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 .text-gradient {
@@ -179,7 +179,7 @@
 
 .hero-description {
     font-size: 1.25rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.95);
     line-height: 1.6;
     margin-bottom: 2.5rem;
 }
@@ -206,7 +206,7 @@
 
 .section-subtitle {
     text-align: center;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.7);
     max-width: 600px;
     margin: 0 auto 4rem;
 }
@@ -748,11 +748,30 @@
 .impact-quote {
     font-size: 1.25rem;
     font-style: italic;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.9);
     border-left: 4px solid var(--google-blue);
     padding-left: 1.5rem;
     margin: 2rem 0;
 }
+
+.footer-main .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.footer-main .nav-link:hover {
+    color: #ffffff !important;
+}
+
+.footer-main h4 {
+    color: #ffffff;
+}
+
+.footer-main p,
+.footer-main .footer-logo,
+.footer-main div[style*="text-align: center"] {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
 
 /* Responsive */
 @media (max-width: 992px) {

@@ -41,9 +41,9 @@ const parseLocalDate = (dateStr) => {
 
 import AvatarSelection, { avatars } from './AvatarSelection';
 import { cleanText } from '../utils/textCleaner';
+import DoodleBackground from './DoodleBackground';
 
 // --- Flashcard Component ---
-// --- Flashcard Component --- //
 const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => {
     const [cards, setCards] = useState([]);
     const [currentCard, setCurrentCard] = useState(0);
@@ -1877,8 +1877,9 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
     }
 
     return (
-        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent' }}>
-            <div className="container" style={{ padding: '2rem 1rem' }}>
+        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent', position: 'relative' }}>
+            <DoodleBackground opacity={0.25} />
+            <div className="container" style={{ padding: '2rem 1rem', position: 'relative', zIndex: 1 }}>
 
                 {/* Dashboard Header - Show only if on main overview (no subject selected and not in settings/profile) */}
                 {!selectedSubject && viewMode === 'subject' && (
