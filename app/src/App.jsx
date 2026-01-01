@@ -48,6 +48,7 @@ import { avatars } from './components/AvatarSelection';
 import LiquidEther from './components/LiquidEther';
 import Plasma from './components/Plasma';
 import StudySessionsView from './components/StudySessionsView';
+import FloatingTimer from './components/FloatingTimer';
 
 // --- Decorative Components ---
 
@@ -607,7 +608,61 @@ function App() {
     const [demoUser, setDemoUser] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [floatingTimer, setFloatingTimer] = useState(null);
+
+    // Global Timer State
+    const [timerActive, setTimerActive] = useState(false);
+    const [totalSeconds, setTotalSeconds] = useState(0);
+    const [remainingSeconds, setRemainingSeconds] = useState(0);
+    const [timerRunning, setTimerRunning] = useState(false);
+
     const [profileReq, setProfileReq] = useState(0);
+
+    // Timer countdown logic
+    useEffect(() => {
+        let interval;
+        if (timerRunning && remainingSeconds > 0 && timerActive) {
+            interval = setInterval(() => {
+                setRemainingSeconds(prev => {
+                    if (prev <= 1) {
+                        setTimerRunning(false);
+                        // Timer completed
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [timerRunning, remainingSeconds, timerActive]);
+
+    // Timer control functions
+    const startTimer = (hours, minutes) => {
+        const total = (hours * 3600) + (minutes * 60);
+        if (total > 0) {
+            setTotalSeconds(total);
+            setRemainingSeconds(total);
+            setTimerActive(true);
+            setTimerRunning(true);
+        }
+    };
+
+    const toggleTimerPlayPause = () => {
+        setTimerRunning(!timerRunning);
+    };
+
+    const resetTimer = () => {
+        setTimerRunning(false);
+        setRemainingSeconds(totalSeconds);
+    };
+
+    const stopTimer = () => {
+        setTimerActive(false);
+        setTimerRunning(false);
+        setTotalSeconds(0);
+        setRemainingSeconds(0);
+        setFloatingTimer(null);
+    };
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -757,7 +812,33 @@ function App() {
                     setViewMode={setViewMode}
                     glassIntensity={glassIntensity}
                     setGlassIntensity={setGlassIntensity}
+                    floatingTimer={floatingTimer}
+                    setFloatingTimer={setFloatingTimer}
+                    timerActive={timerActive}
+                    totalSeconds={totalSeconds}
+                    remainingSeconds={remainingSeconds}
+                    timerRunning={timerRunning}
+                    startTimer={startTimer}
+                    toggleTimerPlayPause={toggleTimerPlayPause}
+                    resetTimer={resetTimer}
+                    stopTimer={stopTimer}
                 />
+
+                {/* Global Floating Timer */}
+                {floatingTimer && (
+                    <FloatingTimer
+                        totalSeconds={totalSeconds}
+                        remainingSeconds={remainingSeconds}
+                        isRunning={timerRunning}
+                        onPlayPause={toggleTimerPlayPause}
+                        onReset={resetTimer}
+                        onMaximize={() => {
+                            setFloatingTimer(null);
+                            setViewMode('study-sessions');
+                        }}
+                        onClose={() => setFloatingTimer(null)}
+                    />
+                )}
             </div>
         );
     }

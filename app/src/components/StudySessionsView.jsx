@@ -1,54 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Play, Pause, X, RotateCcw, Minimize2, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Play, Pause, RotateCcw, Minimize2, ArrowLeft, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const StudySessionsView = ({ onBack }) => {
+const StudySessionsView = ({
+    onBack,
+    onMinimize,
+    timerActive,
+    totalSeconds,
+    remainingSeconds,
+    timerRunning,
+    startTimer,
+    toggleTimerPlayPause,
+    resetTimer,
+    stopTimer
+}) => {
     const [hours, setHours] = useState(0);
     const [minutes, setMinutes] = useState(25);
-    const [totalSeconds, setTotalSeconds] = useState(0);
-    const [remainingSeconds, setRemainingSeconds] = useState(0);
-    const [isRunning, setIsRunning] = useState(false);
-    const [isStarted, setIsStarted] = useState(false);
-
-    useEffect(() => {
-        let interval;
-        if (isRunning && remainingSeconds > 0) {
-            interval = setInterval(() => {
-                setRemainingSeconds(prev => {
-                    if (prev <= 1) {
-                        setIsRunning(false);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [isRunning, remainingSeconds]);
 
     const handleStart = () => {
-        const total = (hours * 3600) + (minutes * 60);
-        if (total > 0) {
-            setTotalSeconds(total);
-            setRemainingSeconds(total);
-            setIsStarted(true);
-            setIsRunning(true);
+        if (hours > 0 || minutes > 0) {
+            startTimer(hours, minutes);
         }
-    };
-
-    const handlePlayPause = () => {
-        setIsRunning(!isRunning);
-    };
-
-    const handleReset = () => {
-        setIsRunning(false);
-        setRemainingSeconds(totalSeconds);
     };
 
     const handleNewTimer = () => {
-        setIsRunning(false);
-        setIsStarted(false);
-        setRemainingSeconds(0);
+        stopTimer();
+        setHours(0);
+        setMinutes(25);
     };
 
     const formatTime = (seconds) => {
@@ -64,7 +42,7 @@ const StudySessionsView = ({ onBack }) => {
 
     const progress = totalSeconds > 0 ? ((totalSeconds - remainingSeconds) / totalSeconds) * 100 : 0;
 
-    if (!isStarted) {
+    if (!timerActive) {
         // Setup View
         return (
             <motion.div
@@ -222,16 +200,29 @@ const StudySessionsView = ({ onBack }) => {
                     </button>
                     <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>Study Session Active</h2>
                 </div>
-                <span style={{
-                    background: isRunning ? 'var(--google-green-light)' : 'var(--google-yellow-light)',
-                    color: isRunning ? 'var(--google-green)' : '#f59e0b',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '20px',
-                    fontSize: '0.85rem',
-                    fontWeight: 700
-                }}>
-                    {isRunning ? '● RUNNING' : '❚❚ PAUSED'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span style={{
+                        background: timerRunning ? 'var(--google-green-light)' : 'var(--google-yellow-light)',
+                        color: timerRunning ? 'var(--google-green)' : '#f59e0b',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '20px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700
+                    }}>
+                        {timerRunning ? '● RUNNING' : '❚❚ PAUSED'}
+                    </span>
+                    <button
+                        onClick={() => {
+                            stopTimer();
+                            onBack();
+                        }}
+                        className="btn-modern btn-glass"
+                        style={{ padding: '0.5rem' }}
+                        title="Stop timer"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
             </div>
 
             <div className="lab-card" style={{ padding: '4rem 3rem', background: 'var(--bg-color)', borderRadius: '32px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
@@ -265,21 +256,29 @@ const StudySessionsView = ({ onBack }) => {
                     }} />
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                     <button
-                        onClick={handlePlayPause}
+                        onClick={toggleTimerPlayPause}
                         className="btn-modern btn-solid"
                         style={{ padding: '1rem 2rem', fontSize: '1rem', justifyContent: 'center', minWidth: '140px' }}
                     >
-                        {isRunning ? <><Pause size={20} /> Pause</> : <><Play size={20} /> Resume</>}
+                        {timerRunning ? <><Pause size={20} /> Pause</> : <><Play size={20} /> Resume</>}
                     </button>
                     <button
-                        onClick={handleReset}
+                        onClick={resetTimer}
                         className="btn-modern btn-glass"
                         style={{ padding: '1rem 2rem', fontSize: '1rem', justifyContent: 'center', minWidth: '140px' }}
                     >
                         <RotateCcw size={20} />
                         Reset
+                    </button>
+                    <button
+                        onClick={onMinimize}
+                        className="btn-modern btn-glass"
+                        style={{ padding: '1rem 2rem', fontSize: '1rem', justifyContent: 'center', minWidth: '140px' }}
+                    >
+                        <Minimize2 size={20} />
+                        Minimize
                     </button>
                 </div>
 
