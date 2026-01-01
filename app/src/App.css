@@ -19,6 +19,21 @@
     border-bottom: 1px solid var(--border-color);
 }
 
+[data-theme='dark'] .navbar {
+    background: transparent;
+}
+
+[data-theme='dark'] .navbar.scrolled {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .navbar .logo-text,
+[data-theme='dark'] .navbar .nav-link {
+    color: var(--text-primary);
+}
+
 .nav-container {
     display: flex;
     align-items: center;
@@ -73,10 +88,29 @@
     color: var(--google-blue);
 }
 
+/* Landing Page Specific Overrides */
+.landing-page .navbar.scrolled {
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.landing-page .navbar.scrolled .nav-link,
+.landing-page .navbar.scrolled .logo-text,
+.landing-page .navbar .nav-link,
+.landing-page .navbar .logo-text {
+    color: #ffffff !important;
+}
+
+.landing-page .navbar.scrolled .nav-link:hover,
+.landing-page .navbar .nav-link:hover {
+    color: var(--google-blue) !important;
+}
+
 /* Hero Section */
 .hero {
     min-height: 85vh;
-    background: var(--grad-hero);
+    background: transparent;
     display: flex;
     align-items: center;
     position: relative;
@@ -145,7 +179,7 @@
 
 .hero-description {
     font-size: 1.25rem;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.8);
     line-height: 1.6;
     margin-bottom: 2.5rem;
 }
@@ -166,7 +200,8 @@
     text-align: center;
     margin-bottom: 1rem;
     font-weight: 800;
-    color: var(--text-primary);
+    /* Force white text on landing page */
+    color: #ffffff;
 }
 
 .section-subtitle {
@@ -196,9 +231,10 @@
 }
 
 [data-theme='light'] .pain-item {
-    background: #ffffff;
-    border-color: #f0f0f0;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    color: white;
 }
 
 .pain-item:hover {
@@ -247,8 +283,9 @@
     border-radius: 40px;
     background: var(--bg-color);
     /* Use theme base color */
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-md);
+    /* Use theme base color */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
     display: flex;
     flex-direction: column;
@@ -267,9 +304,11 @@
 }
 
 [data-theme='light'] .feature-card {
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    color: white;
 }
 
 .feature-card:hover {
@@ -339,7 +378,7 @@
     pointer-events: none;
     border-radius: inherit;
     padding: 2px;
-    background: linear-gradient(135deg, var(--google-blue), var(--google-green), var(--google-blue));
+    background: linear-gradient(135deg, transparent, var(--google-blue), transparent);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -372,18 +411,18 @@
 
 .feature-card:hover .feature-icon-wrapper {
     transform: scale(1.15) rotate(10deg);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    background: rgba(66, 133, 244, 0.15);
+    box-shadow: 0 0 40px rgba(66, 133, 244, 0.4);
 }
 
 .feature-card h3 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
-    color: var(--text-primary);
+    color: inherit;
 }
 
 .feature-card p {
-    color: var(--text-secondary) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
 }
 
 [data-theme='dark'] .feature-card h3 {
@@ -574,10 +613,10 @@
 }
 
 .step:hover .step-content {
-    background: rgba(49, 46, 129, 0.5);
-    border-color: var(--google-blue);
+    background: rgba(30, 41, 59, 0.9);
+    border-color: #4285f4;
     transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 30px rgba(66, 133, 244, 0.4), inset 0 0 20px rgba(66, 133, 244, 0.1);
 }
 
 .step-content::before {

@@ -45,6 +45,7 @@ import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import { avatars } from './components/AvatarSelection';
+import LiquidEther from './components/LiquidEther';
 
 // --- Decorative Components ---
 
@@ -111,7 +112,7 @@ const Hero = ({ onActionClick }) => (
     </section>
 );
 
-const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, toggleTheme, onMenuClick }) => (
+const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, toggleTheme, onMenuClick, onProfileClick }) => (
     <nav className={`navbar ${scrolled || isDashboard ? 'scrolled' : ''}`}>
         <div className={isDashboard ? "" : "container"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: isDashboard ? '0 2rem' : '0 1.5rem', maxWidth: isDashboard ? '100%' : '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -138,17 +139,24 @@ const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, 
                     </div>
                 )}
 
-                <button
-                    onClick={toggleTheme}
-                    className="btn-modern btn-glass"
-                    style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', justifyContent: 'center' }}
-                >
-                    {theme === 'dark' ? <Sun size={20} color="var(--google-yellow)" /> : <Moon size={20} color="var(--google-blue)" />}
-                </button>
+                {isDashboard && (
+                    <button
+                        onClick={toggleTheme}
+                        className="btn-modern btn-glass"
+                        style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', justifyContent: 'center' }}
+                    >
+                        {theme === 'dark' ? <Sun size={20} color="var(--google-yellow)" /> : <Moon size={20} color="var(--google-blue)" />}
+                    </button>
+                )}
 
                 {user ? (
                     <div className="user-profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.4rem 1rem 0.4rem 0.5rem', borderRadius: '30px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>
+                        <div
+                            onClick={onProfileClick}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.4rem 1rem 0.4rem 0.5rem', borderRadius: '30px', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
                             {userProfile?.avatar ? (
                                 <img
                                     src={avatars.find(a => a.id === userProfile.avatar)?.src || avatars[0].src}
@@ -727,9 +735,12 @@ function App() {
                     theme={theme}
                     toggleTheme={toggleTheme}
                     onMenuClick={() => setIsSidebarOpen(true)}
+                    onProfileClick={() => setViewMode('profile')}
                 />
                 <Dashboard
                     user={currentUser}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
                     onLogout={handleLogout}
                     subjects={subjects}
                     setSubjects={setSubjects}
@@ -739,23 +750,44 @@ function App() {
                     setViewMode={setViewMode}
                     glassIntensity={glassIntensity}
                     setGlassIntensity={setGlassIntensity}
-                    userProfile={userProfile}
-                    setUserProfile={setUserProfile}
                 />
             </div>
         );
     }
 
     return (
-        <div className="app-container">
-            <div className="bg-gradient-layer" />
-            <div className="ombre-glow glow-1" />
-            <div className="ombre-glow glow-2" />
-            <Navbar scrolled={scrolled} user={currentUser} userProfile={userProfile} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
-            <Hero onActionClick={handleActionClick} />
-            <PainPoints />
-            <Features />
-            <HowItWorks />
+        <div className="app-container landing-page" style={{ position: 'relative', background: '#000000', color: '#ffffff' }}>
+            <LiquidEther
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    zIndex: 0,
+                    pointerEvents: 'none'
+                }}
+                colors={['#1a73e8', '#4285f4', '#8ab4f8', '#1e88e5']}
+                autoDemo={true}
+                resolution={0.6}
+                autoSpeed={1.0}
+                mouseForce={30}
+                autoIntensity={2.5}
+                isViscous={true}
+                viscous={15}
+                dt={0.02}
+                autoResumeDelay={500}
+            />
+            {/* <div className="bg-gradient-layer" style={{ zIndex: 1 }} /> */}
+            <div className="ombre-glow glow-1" style={{ zIndex: 1 }} />
+            <div className="ombre-glow glow-2" style={{ zIndex: 1 }} />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+                <Navbar scrolled={scrolled} user={currentUser} userProfile={userProfile} onAuthClick={() => setShowAuth(true)} isDashboard={false} theme={theme} toggleTheme={toggleTheme} />
+                <Hero onActionClick={handleActionClick} />
+                <PainPoints />
+                <Features />
+                <HowItWorks />
+            </div>
 
             <footer className="footer-main">
                 <div className="container">
