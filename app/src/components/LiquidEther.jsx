@@ -21,7 +21,8 @@ export default function LiquidEther({
     autoIntensity = 2.2,
     takeoverDuration = 0.25,
     autoResumeDelay = 1000,
-    autoRampDuration = 0.6
+    autoRampDuration = 0.6,
+    interaction = true
 }) {
     const mountRef = useRef(null);
     const webglRef = useRef(null);
@@ -139,7 +140,8 @@ export default function LiquidEther({
                 this._onTouchEnd = this.onTouchEnd.bind(this);
                 this._onDocumentLeave = this.onDocumentLeave.bind(this);
             }
-            init(container) {
+            init(container, interactionEnabled = true) {
+                this.interactionEnabled = interactionEnabled;
                 this.container = container;
                 this.docTarget = container.ownerDocument || null;
                 const defaultView =
@@ -196,6 +198,7 @@ export default function LiquidEther({
                 this.mouseMoved = true;
             }
             onDocumentMouseMove(event) {
+                if (!this.interactionEnabled) return;
                 if (!this.updateHoverState(event.clientX, event.clientY)) return;
                 if (this.onInteract) this.onInteract();
                 if (this.isAutoActive && !this.hasUserControl && !this.takeoverActive) {
@@ -216,6 +219,7 @@ export default function LiquidEther({
                 this.hasUserControl = true;
             }
             onDocumentTouchStart(event) {
+                if (!this.interactionEnabled) return;
                 if (event.touches.length !== 1) return;
                 const t = event.touches[0];
                 if (!this.updateHoverState(t.clientX, t.clientY)) return;
@@ -224,6 +228,7 @@ export default function LiquidEther({
                 this.hasUserControl = true;
             }
             onDocumentTouchMove(event) {
+                if (!this.interactionEnabled) return;
                 if (event.touches.length !== 1) return;
                 const t = event.touches[0];
                 if (!this.updateHoverState(t.clientX, t.clientY)) return;
@@ -251,7 +256,6 @@ export default function LiquidEther({
                 }
                 this.diff.subVectors(this.coords, this.coords_old);
                 this.coords_old.copy(this.coords);
-                if (this.coords_old.x === 0 && this.coords_old.y === 0) this.diff.set(0, 0);
                 if (this.isAutoActive && !this.takeoverActive) this.diff.multiplyScalar(this.autoIntensity);
             }
         }
@@ -263,7 +267,7 @@ export default function LiquidEther({
                 this.manager = manager;
                 this.enabled = opts.enabled;
                 this.speed = opts.speed; // normalized units/sec
-                this.resumeDelay = opts.resumeDelay || 3000; // ms
+                this.resumeDelay = (opts.resumeDelay !== undefined) ? opts.resumeDelay : 3000; // ms
                 this.rampDurationMs = (opts.rampDuration || 0) * 1000;
                 this.active = false;
                 this.current = new THREE.Vector2(0, 0);
@@ -401,13 +405,33 @@ export default function LiquidEther({
     uniform sampler2D velocity;
     uniform sampler2D palette;
     uniform vec4 bgColor;
+    uniform vec2 px;
     varying vec2 uv;
     void main(){
     vec2 vel = texture2D(velocity, uv).xy;
-    float lenv = clamp(length(vel), 0.0, 1.0);
-    vec3 c = texture2D(palette, vec2(lenv, 0.5)).rgb;
-    vec3 outRGB = mix(bgColor.rgb, c, lenv);
-    float outA = mix(bgColor.a, 1.0, lenv);
+    float lenv = length(vel);
+    float clampedLen = clamp(lenv, 0.0, 1.0);
+    
+    // Metallic effect: enhanced highlights based on velocity gradients
+    vec2 vx = texture2D(velocity, uv + vec2(px.x * 2.0, 0.0)).xy;
+    vec2 vy = texture2D(velocity, uv + vec2(0.0, px.y * 2.0)).xy;
+    float grad = length(vx - vel) + length(vy - vel);
+    
+    // Pseudo-specular highlight for metallic look
+    float spec = pow(clampedLen, 1.2) * 0.9 + pow(grad * 15.0, 2.0) * 0.6;
+    spec = clamp(spec, 0.0, 1.0);
+    
+    vec3 baseColor = texture2D(palette, vec2(clampedLen, 0.5)).rgb;
+    
+    // Intensify colors for metallic look
+    vec3 metallicColor = baseColor * (1.2 + spec * 0.8);
+    metallicColor += vec3(spec * 0.6); // Add white/silver highlights
+    
+    // Add a subtle deep blue base even at low velocity
+    vec3 deepBlue = vec3(0.02, 0.05, 0.2) * (1.0 - clampedLen);
+    vec3 outRGB = mix(deepBlue, metallicColor, clampedLen);
+    float outA = mix(bgColor.a, 1.0, clampedLen);
+    
     gl_FragColor = vec4(outRGB, outA);
 }
 `;
@@ -901,7 +925,8 @@ export default function LiquidEther({
                             velocity: { value: this.simulation.fbos.vel_0.texture },
                             boundarySpace: { value: new THREE.Vector2() },
                             palette: { value: paletteTex },
-                            bgColor: { value: bgVec4 }
+                            bgColor: { value: bgVec4 },
+                            px: { value: this.simulation.cellScale }
                         }
                     })
                 );
@@ -927,7 +952,7 @@ export default function LiquidEther({
             constructor(props) {
                 this.props = props;
                 Common.init(props.$wrapper);
-                Mouse.init(props.$wrapper);
+                Mouse.init(props.$wrapper, props.interaction);
                 Mouse.autoIntensity = props.autoIntensity;
                 Mouse.takeoverDuration = props.takeoverDuration;
                 this.lastUserInteraction = performance.now();
@@ -1014,7 +1039,9 @@ export default function LiquidEther({
             autoIntensity,
             takeoverDuration,
             autoResumeDelay,
-            autoRampDuration
+            autoRampDuration,
+            mouseForce,
+            interaction
         });
         webglRef.current = webgl;
 

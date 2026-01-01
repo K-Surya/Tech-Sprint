@@ -61,10 +61,7 @@ const Hero = ({ onActionClick }) => (
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
             >
-                <div className="hero-badge">
-                    <Sparkles size={16} />
-                    <span>AI-Powered Learning Companion</span>
-                </div>
+
 
                 <h1 className="hero-title">
                     From Lecture Noise to <br />
@@ -771,14 +768,14 @@ function App() {
                 autoDemo={true}
                 resolution={0.6}
                 autoSpeed={1.0}
-                mouseForce={30}
-                autoIntensity={2.5}
+                mouseForce={40}
+                autoIntensity={4.0}
                 isViscous={true}
                 viscous={15}
                 dt={0.02}
-                autoResumeDelay={500}
+                autoResumeDelay={0}
+                interaction={false}
             />
-            {/* <div className="bg-gradient-layer" style={{ zIndex: 1 }} /> */}
             <div className="ombre-glow glow-1" style={{ zIndex: 1 }} />
             <div className="ombre-glow glow-2" style={{ zIndex: 1 }} />
             <div style={{ position: 'relative', zIndex: 2 }}>
@@ -804,7 +801,7 @@ function App() {
                         <div>
                             <h4 style={{ marginBottom: '1.5rem' }}>Resources</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <a href="#" className="nav-link">College Brand Kit</a>
+
                                 <a href="#" className="nav-link">Privacy Policy</a>
                             </div>
                         </div>
