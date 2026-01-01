@@ -779,7 +779,7 @@ function App() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '3rem' }}>
                         <div style={{ maxWidth: '400px' }}>
                             <span className="footer-logo">Benchmate AI</span>
-                            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                            <p style={{ lineHeight: 1.6 }}>
                                 The world's most student-friendly lecture companion.
                             </p>
                             <div className="impact-quote">
@@ -799,13 +799,13 @@ function App() {
                                 <a href="mailto:support@benchmateai.temp" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <Sparkles size={16} /> support@benchmateai.temp
                                 </a>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                <p style={{ fontSize: '0.85rem' }}>
                                     Available Mon-Fri <br /> 9:00 AM - 6:00 PM
                                 </p>
                             </div>
                         </div>
                     </div>
-                    <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '1px solid var(--border-color)', textAlign: 'center', fontSize: '0.85rem' }}>
                         © 2025 Benchmate AI • Built for GDG Hackathon
                     </div>
                 </div>
