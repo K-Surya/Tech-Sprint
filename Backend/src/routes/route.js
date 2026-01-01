@@ -2,7 +2,7 @@ import express from "express";
 import generateNotes from "../services/gemini-notes.js";
 import generateQuiz from "../services/gemini-quiz.js";
 import generateFlashcards from "../services/gemini-flashcards.js";
-import { processQuizData } from "../services/pipeline.service.js";
+import { processQuizData, generateRoadmapForSubject } from "../services/pipeline.service.js";
 import generateRoadmap from "../services/gemini-roadmap.js";
 
 const router = express.Router();
@@ -82,13 +82,13 @@ router.post("/analyze", async (req, res) => {
 
 router.post("/roadmap", async (req, res) => {
   try {
-    const { subject, examDate, topics } = req.body;
+    const { subject, examDate, lectures } = req.body;
 
     if (!subject) {
       return res.status(400).json({ error: "Subject is required" });
     }
 
-    const roadmap = await generateRoadmap(subject, examDate, topics);
+    const roadmap = await generateRoadmapForSubject(req.body);
     res.json({ roadmap });
   } catch (err) {
     console.error("Roadmap error:", err.message);

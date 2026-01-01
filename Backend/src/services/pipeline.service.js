@@ -1,6 +1,7 @@
 import { analyzePerformance } from "./analytics.service.js";
 import { determineWeaknessLevel } from "./studyPlan.service.js";
 import generateStudyPlan from "./gemini-studyplan.js";
+import generateRoadmap from "./gemini-roadmap.js";
 
 export const processQuizData = async (data) => {
   const { subjectId, lectures, examDate } = data;
@@ -30,4 +31,15 @@ export const processQuizData = async (data) => {
     weaknessLevel,
     studyPlan,
   };
+};
+
+export const generateRoadmapForSubject = async (data) => {
+  const { subject, examDate, lectures } = data;
+
+  // Aggregate all lecture transcripts
+  const topics = (lectures || [])
+    .filter(l => l.transcript)
+    .map(l => l.title + ": " + (l.transcript.slice(0, 500) + "...")); // Use title and preview
+
+  return await generateRoadmap(subject, examDate, topics);
 };

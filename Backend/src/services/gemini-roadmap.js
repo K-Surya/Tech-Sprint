@@ -1,33 +1,43 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_ROADMAP || process.env.GEMINI_API_KEY_NOTES || process.env.GEMINI_API_KEY_QUIZ);
+const apiKey = process.env.GEMINI_API_KEY_STUDY_PLAN || process.env.GEMINI_API_KEY_ROADMAP || process.env.GEMINI_API_KEY_NOTES;
+
+console.log("--- Roadmap Service Info ---");
+console.log("Using API Key (type):", process.env.GEMINI_API_KEY_STUDY_PLAN ? "STUDY_PLAN (High Tier)" : "Fallback");
+console.log("API Key configured:", !!apiKey);
+
+const genAI = new GoogleGenerativeAI(apiKey);
 
 async function generateRoadmap(subject, examDate, topics = []) {
+    console.log(`Generating roadmap for ${subject} with ${topics.length} lectures...`);
     try {
         const model = genAI.getGenerativeModel({
-            model: "gemma-7b",
+            model: "gemini-1.5-flash",
             generationConfig: {
                 responseMimeType: "application/json",
             }
         });
 
         const prompt = `
-    You are a professional study strategist and educational consultant.
-    Your goal is to create a comprehensive study roadmap for a student preparing for an exam.
+    You are an expert academic counselor and study strategist.
+    Based on the following subject and lecture content, generate a personalized study roadmap for the student.
 
     Subject: ${subject}
     Exam Date: ${examDate || "Not specified"}
-    Completed/Available Topics: ${topics.length > 0 ? topics.join(", ") : "None specified"}
+    
+    Lecture Content/Topics:
+    ${topics.length > 0 ? topics.join("\n") : "General subject overview (no specific lectures provided)"}
 
     STRICT RULES:
     1. Return ONLY valid JSON.
-    2. Create a roadmap with exactly 4-5 "Phases".
+    2. Create a 7-day master plan organized into logical "Phases".
     3. Each phase must have:
        - phaseName (string)
-       - duration (string, e.g., "Day 1-2" or "Phase 1")
+       - duration (string, e.g., "Day 1-2")
        - focus (string)
        - tasks (array of strings)
-    4. The roadmap should be logical and move from basic core concepts to advanced application and final revision.
+    4. Ensure the tasks are directly derived from the topics provided in the lecture content.
+    5. The roadmap should move from core concepts to application and final revision.
 
     The final output must be a single JSON object in this exact shape:
     {
@@ -36,7 +46,7 @@ async function generateRoadmap(subject, examDate, topics = []) {
           "phaseName": "Foundation Phase",
           "duration": "Day 1-2",
           "focus": "Core concepts and terminology",
-          "tasks": ["Review intro notes", "Master basic definitions"]
+          "tasks": ["Task specific to lecture 1", "Task specific to lecture 2"]
         },
         ...
       ]
@@ -44,10 +54,18 @@ async function generateRoadmap(subject, examDate, topics = []) {
   `;
 
         const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
-        const cleanJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        const parsedData = JSON.parse(cleanJson);
-        return parsedData.roadmap || parsedData;
+        let responseText = result.response.text();
+
+        // Clean potential markdown or extra text
+        let cleanJson = responseText.trim();
+        if (cleanJson.includes("```json")) {
+            cleanJson = cleanJson.split("```json")[1].split("```")[0];
+        } else if (cleanJson.includes("```")) {
+            cleanJson = cleanJson.split("```")[1].split("```")[0];
+        }
+
+        const parsedData = JSON.parse(cleanJson.trim());
+        return parsedData.roadmap || parsedData.plan || parsedData;
     } catch (error) {
         console.error("Error in generateRoadmap service:", error);
         // Fallback roadmap

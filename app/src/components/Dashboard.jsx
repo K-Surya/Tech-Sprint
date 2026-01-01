@@ -819,8 +819,11 @@ const SubjectDetailView = ({
     removeSubject,
     setShowExamModal,
     setNewExam,
+    setShowExamModal,
+    setNewExam,
     generateAndSaveRoadmap,
-    setViewMode
+    setViewMode,
+    deleteRoadmap
 }) => {
     const [generatingRoadmap, setGeneratingRoadmap] = useState(false);
 
@@ -954,6 +957,20 @@ const SubjectDetailView = ({
                                     <><Sparkles size={18} /> {selectedSubject.roadmap ? 'View Study Roadmap' : 'Generate Study Roadmap'}</>
                                 )}
                             </button>
+                            {selectedSubject.roadmap && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm('Are you sure you want to clear this roadmap?')) {
+                                            deleteRoadmap(selectedSubject.id);
+                                        }
+                                    }}
+                                    className="btn-modern btn-glass"
+                                    style={{ width: '100%', marginTop: '0.5rem', padding: '0.6rem', color: '#e53e3e', fontSize: '0.8rem' }}
+                                >
+                                    <Trash2 size={14} /> Reset Roadmap
+                                </button>
+                            )}
                             <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '0.8rem' }}>
                                 Powered by AI pipeline integration.
                             </p>
@@ -1707,6 +1724,19 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
             alert("Roadmap generation failed. Please ensure your local backend is running on port 5000 and has a valid Gemini API key.");
         }
     };
+    const deleteRoadmap = async (subjectId) => {
+        try {
+            const { saveSubjectRoadmap, logActivity } = await import('../services/db');
+            await saveSubjectRoadmap(user.uid, subjectId, null); // Clear roadmap
+            await logActivity(user.uid, {
+                type: 'roadmap',
+                text: `Reset roadmap for ${selectedSubject.name}`
+            });
+            console.log("Roadmap reset.");
+        } catch (error) {
+            console.error("Failed to reset roadmap:", error);
+        }
+    };
 
     const handleCalendarAuth = async () => {
         try {
@@ -1971,6 +2001,7 @@ const Dashboard = ({ user, onLogout, subjects, setSubjects, selectedSubject, set
                             setShowExamModal={setShowExamModal}
                             setNewExam={setNewExam}
                             generateAndSaveRoadmap={generateAndSaveRoadmap}
+                            deleteRoadmap={deleteRoadmap}
                         />
                     ) : (
                         <div className="dashboard-grid">
