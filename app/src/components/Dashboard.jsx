@@ -39,12 +39,8 @@ const parseLocalDate = (dateStr) => {
     return new Date(y, m - 1, d);
 };
 
-const cleanText = (text) => {
-    return text.replace(/\s+/g, ' ').trim();
-};
-
-
 import AvatarSelection, { avatars } from './AvatarSelection';
+import { cleanText } from '../utils/textCleaner';
 
 // --- Flashcard Component ---
 // --- Flashcard Component --- //
