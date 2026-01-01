@@ -815,8 +815,6 @@ const SubjectDetailView = ({
     removeSubject,
     setShowExamModal,
     setNewExam,
-    setShowExamModal,
-    setNewExam,
     generateAndSaveRoadmap,
     setViewMode,
     deleteRoadmap
