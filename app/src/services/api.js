@@ -1,6 +1,6 @@
-const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? "http://localhost:5000/benchmate"
-    : "https://tech-sprint-qn15.onrender.com/benchmate";
+const BASE_URL = "https://tech-sprint-qn15.onrender.com";
+// If you want to use local backend, swap with:
+// const BASE_URL = window.location.hostname === 'localhost' ? "http://localhost:5000/benchmate" : "https://tech-sprint-qn15.onrender.com/benchmate";
 
 export const generateNotes = async (transcript, subject) => {
     try {
