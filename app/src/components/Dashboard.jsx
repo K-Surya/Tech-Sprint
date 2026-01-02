@@ -1909,10 +1909,7 @@ const Dashboard = ({
                             </motion.h1>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Select a subject to start recording or view notes.</p>
                         </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button className="btn-modern btn-glass" onClick={() => setShowExamModal(true)}>
-                                <Calendar size={20} /> Add Exam
-                            </button>
+                        <div>
                             <button className="btn-modern btn-glass" onClick={() => setShowSubjectModal(true)}>
                                 <Plus size={20} /> Add Subject
                             </button>
