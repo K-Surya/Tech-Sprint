@@ -25,7 +25,8 @@ import {
     BrainCircuit,
     ArrowLeft,
     Sparkles,
-    Clipboard
+    Clipboard,
+    Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
