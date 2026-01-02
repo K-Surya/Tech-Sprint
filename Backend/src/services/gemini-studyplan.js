@@ -7,7 +7,7 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 async function generateStudyPlan(kms, metrics, weaknessLevel, daysRemaining) {
   const model = genAI.getGenerativeModel({
-    model: "gemma-3-1b",
+    model: "gemma-7b",
     generationConfig: {
       responseMimeType: "application/json",
     },
