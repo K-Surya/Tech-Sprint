@@ -2231,7 +2231,7 @@ const Dashboard = ({
                                                                 </div>
                                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                                                     {examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                                    {daysUntil >= 0 && ` • ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`}
+                                                                    {daysUntil === 0 ? ' • TODAY' : daysUntil > 0 ? ` • ${daysUntil} day${daysUntil !== 1 ? 's' : ''}` : ''}
                                                                 </div>
                                                             </div>
                                                             <button
@@ -2361,6 +2361,7 @@ const Dashboard = ({
                                     type="date"
                                     value={newExam.examDate}
                                     onChange={(e) => setNewExam({ ...newExam, examDate: e.target.value })}
+                                    min={new Date().toISOString().split('T')[0]}
                                     style={{
                                         width: '100%',
                                         padding: '1rem',
