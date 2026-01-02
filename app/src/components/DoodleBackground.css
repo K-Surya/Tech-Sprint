@@ -1,0 +1,50 @@
+.doodle-bg-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    background-color: var(--bg-color);
+}
+
+.doodle-pattern {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    background-image: url('/doodle_pattern.png');
+    /* We will copy the generated image here */
+    background-repeat: repeat;
+    background-size: 400px;
+    opacity: var(--doodle-opacity, 0.05);
+    animation: doodle-drift 60s linear infinite;
+}
+
+.doodle-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, transparent 0%, var(--bg-color) 80%);
+    opacity: 0.4;
+}
+
+@keyframes doodle-drift {
+    from {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50px, -50px) rotate(1deg);
+    }
+}
+
+[data-theme='dark'] .doodle-pattern {
+    filter: invert(1) brightness(0.8);
+    opacity: calc(var(--doodle-opacity, 0.05) * 0.8);
+}

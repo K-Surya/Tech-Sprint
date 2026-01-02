@@ -9,7 +9,7 @@ export default async function generateFlashcards(text) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: "gemma-7b",
+    model: "gemini-3-flash",
     generationConfig: {
       temperature: 0.5,
       responseMimeType: "application/json"

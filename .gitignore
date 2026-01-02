@@ -56,3 +56,6 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 app/src/firebase.js
+
+# Test scripts
+test-studyplan.js

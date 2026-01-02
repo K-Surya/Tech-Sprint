@@ -5,26 +5,66 @@ import {
     setDoc,
     addDoc,
     getDocs,
+    getDoc,
     query,
     where,
     onSnapshot,
     serverTimestamp,
     orderBy,
     updateDoc,
-
+    deleteDoc,
     arrayUnion,
-    increment
+    increment,
+    limit
 } from 'firebase/firestore';
 
 // --- Users ---
 export const initializeUser = async (user) => {
     if (!user) return;
     const userRef = doc(db, 'users', user.uid);
-    await setDoc(userRef, {
-        email: user.email,
-        displayName: user.displayName,
-        lastLogin: serverTimestamp()
-    }, { merge: true });
+    const docSnap = await getDoc(userRef);
+
+    if (!docSnap.exists()) {
+        // New User
+        await setDoc(userRef, {
+            email: user.email,
+            displayName: user.displayName, // Keep for reference
+            nickname: user.displayName || 'Scholar', // Default nickname
+            avatar: null, // Will trigger selection
+            joinedAt: serverTimestamp(),
+            lastLogin: serverTimestamp()
+        });
+    } else {
+        // Existing User - just update login
+        await updateDoc(userRef, {
+            lastLogin: serverTimestamp()
+        });
+    }
+};
+
+export const getUserProfile = async (userId) => {
+    const userRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+        return docSnap.data();
+    }
+    return null;
+};
+
+export const updateUserProfile = async (userId, data) => {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, data);
+};
+
+export const subscribeToUserProfile = (userId, callback) => {
+    const userRef = doc(db, 'users', userId);
+    return onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+            callback(docSnap.data());
+        } else {
+            callback(null); // Or {} if preferred, but null matches 'not found'
+        }
+    });
 };
 
 // --- Subjects ---
@@ -47,6 +87,19 @@ export const subscribeToSubjects = (userId, callback) => {
             ...doc.data()
         }));
         callback(subjects);
+    });
+};
+
+export const deleteSubject = async (userId, subjectId) => {
+    const subjectRef = doc(db, 'users', userId, 'subjects', subjectId);
+    await deleteDoc(subjectRef);
+};
+
+export const saveSubjectRoadmap = async (userId, subjectId, roadmap) => {
+    const subjectRef = doc(db, 'users', userId, 'subjects', subjectId);
+    await updateDoc(subjectRef, {
+        roadmap: roadmap,
+        roadmapGeneratedAt: serverTimestamp()
     });
 };
 
@@ -76,6 +129,17 @@ export const subscribeToLectures = (userId, subjectId, callback) => {
             ...doc.data()
         }));
         callback(lectures);
+    });
+};
+
+export const deleteLecture = async (userId, subjectId, lectureId) => {
+    const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
+    await deleteDoc(lectureRef);
+
+    // Decrement subject note count
+    const subjectRef = doc(db, 'users', userId, 'subjects', subjectId);
+    await updateDoc(subjectRef, {
+        noteCount: increment(-1)
     });
 };
 
@@ -123,5 +187,84 @@ export const saveQuizScore = async (userId, subjectId, lectureId, score) => {
             score: score,
             timestamp: new Date().toISOString()
         })
+    });
+};
+
+// --- Exam Timetable ---
+export const addExam = async (userId, examData) => {
+    const examsRef = collection(db, 'users', userId, 'exams');
+    const docRef = await addDoc(examsRef, {
+        ...examData,
+        createdAt: serverTimestamp()
+    });
+    return docRef.id;
+};
+
+export const subscribeToExams = (userId, callback) => {
+    const examsRef = collection(db, 'users', userId, 'exams');
+    const q = query(examsRef, orderBy('examDate', 'asc'));
+    return onSnapshot(q, (snapshot) => {
+        const exams = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(exams);
+    });
+};
+
+export const deleteExam = async (userId, examId) => {
+    const examRef = doc(db, 'users', userId, 'exams', examId);
+    await deleteDoc(examRef);
+};
+
+export const updateExamCalendarId = async (userId, examId, calendarEventId) => {
+    const examRef = doc(db, 'users', userId, 'exams', examId);
+    await updateDoc(examRef, {
+        calendarEventId: calendarEventId
+    });
+};
+
+export const clearExamCalendarId = async (userId, examId) => {
+    const examRef = doc(db, 'users', userId, 'exams', examId);
+    await updateDoc(examRef, {
+        calendarEventId: null
+    });
+};
+
+// Save calendar authorization status
+export const saveCalendarAuthStatus = async (userId, isAuthorized) => {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+        calendarAuthorized: isAuthorized,
+        calendarAuthorizedAt: new Date().toISOString()
+    });
+};
+
+// Get calendar authorization status
+export const getCalendarAuthStatus = async (userId) => {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    return userDoc.exists() ? userDoc.data().calendarAuthorized || false : false;
+};
+
+
+// --- Recent Activity ---
+export const logActivity = async (userId, activityData) => {
+    const activityRef = collection(db, 'users', userId, 'recentActivity');
+    await addDoc(activityRef, {
+        ...activityData,
+        timestamp: serverTimestamp()
+    });
+};
+
+export const subscribeToRecentActivity = (userId, limitCount, callback) => {
+    const activityRef = collection(db, 'users', userId, 'recentActivity');
+    const q = query(activityRef, orderBy('timestamp', 'desc'), limit(limitCount));
+    return onSnapshot(q, (snapshot) => {
+        const activities = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        callback(activities);
     });
 };

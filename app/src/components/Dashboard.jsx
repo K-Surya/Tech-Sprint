@@ -32,8 +32,20 @@ import confetti from 'canvas-confetti';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+// Helper functions defined at module scope
+const parseLocalDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
+import AvatarSelection, { avatars } from './AvatarSelection';
+import { cleanText } from '../utils/textCleaner';
+import DoodleBackground from './DoodleBackground';
+import StudySessionsView from './StudySessionsView';
+import LearningCurveView from './LearningCurveView';
+
 // --- Flashcard Component ---
-// --- Flashcard Component --- //
 const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => {
     const [cards, setCards] = useState([]);
     const [currentCard, setCurrentCard] = useState(0);
@@ -123,19 +135,19 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
                         width: '100%',
                         height: '100%',
                         backfaceVisibility: 'hidden',
-                        background: 'white',
+                        background: 'var(--bg-color)',
                         borderRadius: '24px',
                         padding: '3rem',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-                        border: '1px solid #e1e7f0',
+                        boxShadow: 'var(--shadow-md)',
+                        border: '1px solid var(--border-color)',
                         textAlign: 'center'
                     }}>
                         <span style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }}>QUESTION</span>
-                        <h3 style={{ fontSize: '1.5rem', lineHeight: 1.5, color: '#1a202c' }}>
+                        <h3 style={{ fontSize: '1.5rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
                             {cards[currentCard].question || cards[currentCard].front || cards[currentCard].term || "No Question Text"}
                         </h3>
                         <p style={{ position: 'absolute', bottom: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Click to flip</p>
@@ -147,20 +159,20 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
                         width: '100%',
                         height: '100%',
                         backfaceVisibility: 'hidden',
-                        background: '#f8faff', // NotebookLM uses very light backgrounds
+                        background: 'var(--bg-secondary)',
                         borderRadius: '24px',
                         padding: '3rem',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-                        border: '1px solid #e1e7f0',
+                        boxShadow: 'var(--shadow-md)',
+                        border: '1px solid var(--border-color)',
                         transform: 'rotateY(180deg)',
                         textAlign: 'center'
                     }}>
                         <span style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--google-blue)', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }}>ANSWER</span>
-                        <p style={{ fontSize: '1.25rem', lineHeight: 1.6, color: '#2d3748' }}>
+                        <p style={{ fontSize: '1.25rem', lineHeight: 1.6, color: 'var(--text-primary)' }}>
                             {cards[currentCard].answer || cards[currentCard].back || cards[currentCard].definition || "No Answer Text"}
                         </p>
                     </div>
@@ -177,7 +189,21 @@ const FlashcardDeck = ({ userId, subjectId, lectureId, onBack, onGenerate }) => 
 
 // --- Quiz Component ---
 // --- Quiz Component --- //
-const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) => {
+const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGenerate }) => {
+    const quiz = React.useMemo(() => {
+        if (!rawQuiz) return [];
+        if (Array.isArray(rawQuiz)) return rawQuiz;
+        try {
+            // Handle if it's a string, or an object containing a quiz array
+            const parsed = typeof rawQuiz === 'string' ? JSON.parse(rawQuiz) : rawQuiz;
+            const finalQuiz = parsed.quiz || (Array.isArray(parsed) ? parsed : []);
+            return Array.isArray(finalQuiz) ? finalQuiz : [];
+        } catch (e) {
+            console.error("Failed to parse quiz data:", e);
+            return [];
+        }
+    }, [rawQuiz]);
+
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [score, setScore] = useState(0);
     const [selectedOption, setSelectedOption] = useState(null);
@@ -201,7 +227,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
     };
 
     const handleOptionSelect = (optionKey) => {
-        if (selectedOption) return; // Prevent multiple selects
+        if (selectedOption || !quiz[currentQuestion]) return;
         setSelectedOption(optionKey);
         setShowExplanation(true);
 
@@ -223,14 +249,14 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
             setSelectedOption(null);
             setShowExplanation(false);
         } else {
-            finishQuiz(score); // Score is already updated in handleOptionSelect
+            finishQuiz(score);
         }
     };
 
     // Safety check if no quiz data passed
     if (!quiz || quiz.length === 0) return (
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ background: '#fff', padding: '2rem', borderRadius: '24px', textAlign: 'center' }}>
+            <div style={{ background: 'var(--bg-color)', padding: '2rem', borderRadius: '24px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                 <h3 className="google-font">No Quiz Found</h3>
                 <p style={{ color: 'var(--text-secondary)' }}>Click "Generate" above to create one.</p>
             </div>
@@ -239,8 +265,8 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
 
     if (isQuizComplete) {
         return (
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="lab-card" style={{ padding: '3rem', textAlign: 'center', background: 'white', borderRadius: '32px' }}>
-                <h2 className="google-font" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Quiz Completed!</h2>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="lab-card" style={{ padding: '3rem', textAlign: 'center', background: 'var(--bg-color)', borderRadius: '32px' }}>
+                <h2 className="google-font" style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Quiz Completed!</h2>
                 <div style={{ fontSize: '4rem', fontWeight: 700, color: 'var(--google-blue)', marginBottom: '1rem' }}>
                     {score} / {quiz.length}
                 </div>
@@ -272,22 +298,22 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="lab-card"
-                style={{ padding: '2.5rem', background: 'white', borderRadius: '24px', marginBottom: '2rem' }}
+                style={{ padding: '2.5rem', background: 'var(--bg-color)', borderRadius: '24px', marginBottom: '2rem' }}
             >
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '2rem', lineHeight: 1.4 }}>
                     {question.question || question.text || question.query || "Question Text Missing"}
                 </h3>
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                    {Object.entries(question.options).map(([key, text]) => {
+                    {question.options && Object.entries(question.options).map(([key, text]) => {
                         const isSelected = selectedOption === key;
                         const isCorrect = question.correctAnswer === key;
-                        let bg = 'white';
-                        let border = '1px solid #e2e8f0';
+                        let bg = 'var(--bg-secondary)';
+                        let border = '1px solid var(--border-color)';
 
                         if (selectedOption) {
-                            if (isSelected && isCorrect) { bg = '#f0fff4'; border = '2px solid #48bb78'; }
-                            else if (isSelected && !isCorrect) { bg = '#fff5f5'; border = '2px solid #f56565'; }
-                            else if (isCorrect && showExplanation) { bg = '#f0fff4'; border = '2px solid #48bb78'; }
+                            if (isSelected && isCorrect) { bg = 'var(--google-green-light)'; border = '2px solid #48bb78'; }
+                            else if (isSelected && !isCorrect) { bg = 'var(--google-red-light)'; border = '2px solid #f56565'; }
+                            else if (isCorrect && showExplanation) { bg = 'var(--google-green-light)'; border = '2px solid #48bb78'; }
                         }
 
                         return (
@@ -306,8 +332,8 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
                                     gap: '1rem'
                                 }}
                             >
-                                <span style={{ fontWeight: 700, minWidth: '30px', height: '30px', borderRadius: '50%', background: '#edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{key}</span>
-                                <span style={{ fontSize: '1.05rem' }}>{text}</span>
+                                <span style={{ fontWeight: 700, minWidth: '30px', height: '30px', borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>{key}</span>
+                                <span style={{ fontSize: '1.05rem', color: 'var(--text-primary)' }}>{text}</span>
                                 {selectedOption && isCorrect && <CheckCircle2 size={20} color="#48bb78" style={{ marginLeft: 'auto' }} />}
                             </div>
                         );
@@ -316,7 +342,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz, onBack, onGenerate }) =>
 
                 <AnimatePresence>
                     {showExplanation && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: '2rem', padding: '1.5rem', background: '#ebf8ff', borderRadius: '16px', color: '#2c5282' }}>
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: '2rem', padding: '1.5rem', background: 'var(--google-blue-light)', borderRadius: '16px', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
                             <strong>Explanation:</strong> {question.explanation}
                         </motion.div>
                     )}
@@ -454,7 +480,7 @@ const AudioRecorder = ({ onSave }) => {
                         key="completed"
                         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     >
-                        <div className="transcription-box" style={{ background: '#f8faff', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid #e1e7f0', whiteSpace: 'pre-line' }}>
+                        <div className="transcription-box" style={{ background: 'var(--bg-secondary)', borderRadius: '20px', padding: '1.5rem', minHeight: '200px', border: '1px solid var(--border-color)', whiteSpace: 'pre-line' }}>
                             {transcription}
                         </div>
                         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -514,13 +540,14 @@ const AudioRecorder = ({ onSave }) => {
                                 minHeight: '200px',
                                 padding: '1.5rem',
                                 borderRadius: '16px',
-                                border: '2px solid #e1e7f0',
-                                background: '#fcfdfe',
+                                border: '2px solid var(--border-color)',
+                                background: 'var(--bg-secondary)',
                                 fontSize: '1rem',
                                 lineHeight: 1.6,
                                 marginBottom: '1.5rem',
                                 resize: 'vertical',
-                                fontFamily: 'inherit'
+                                fontFamily: 'inherit',
+                                color: 'var(--text-primary)'
                             }}
                             autoFocus
                         />
@@ -567,20 +594,20 @@ const AudioRecorder = ({ onSave }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div
                             className={`upload-zone ${status === 'recording' ? 'live' : ''}`}
-                            style={{ padding: '3rem 1.5rem', background: status === 'recording' ? '#fff5f5' : '#fcfdfe', border: '2px solid transparent' }}
+                            style={{ padding: '3rem 1.5rem', background: status === 'recording' ? 'var(--google-red-light)' : 'var(--bg-secondary)', border: '2px solid transparent' }}
                             onClick={startRecording}
                         >
                             <Mic size={32} color="var(--google-red)" />
-                            <h4 className="google-font">Live Record</h4>
+                            <h4 className="google-font" style={{ color: 'var(--text-primary)' }}>Live Record</h4>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Click to Speak</p>
                         </div>
                         <div
                             className="upload-zone"
-                            style={{ padding: '3rem 1.5rem', border: '2px dashed #e1e7f0', background: '#fcfdfe' }}
+                            style={{ padding: '3rem 1.5rem', border: '2px dashed var(--border-color)', background: 'var(--bg-secondary)' }}
                             onClick={() => setPasting(true)}
                         >
                             <Clipboard size={32} color="var(--google-green)" style={{ marginBottom: '1rem' }} />
-                            <h4 className="google-font">Paste Text</h4>
+                            <h4 className="google-font" style={{ color: 'var(--text-primary)' }}>Paste Text</h4>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Chapters / Notes</p>
                         </div>
                     </div>
@@ -600,7 +627,8 @@ const LectureDetailView = ({
     generateAndSaveFlashcards,
     generateAndSaveQuiz,
     userId,
-    subjectId
+    subjectId,
+    removeLecture
 }) => {
     const [activeTab, setActiveTab] = useState('notes'); // 'notes', 'flashcards', 'quiz'
     const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
@@ -632,7 +660,16 @@ const LectureDetailView = ({
                     <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Processed Notes & Study Material</p>
                 </div>
 
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button
+                        onClick={(e) => removeLecture(e, selectedLecture.id, selectedLecture.title)}
+                        className="btn-modern btn-glass"
+                        style={{ color: '#e53e3e', border: '1px solid rgba(229, 62, 62, 0.2)', padding: '0.6rem 1rem' }}
+                    >
+                        <Trash2 size={18} /> Delete Lecture
+                    </button>
+
+                    <div style={{ width: '1px', height: '24px', background: '#e2e8f0', margin: '0 0.5rem' }}></div>
                     {!selectedLecture.hasFlashcards && (
                         <button
                             className="btn-modern btn-solid"
@@ -684,11 +721,11 @@ const LectureDetailView = ({
             <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', flex: 1, minHeight: 0 }}>
                 {/* Inner Sidebar */}
                 <div style={{
-                    background: 'white',
+                    background: 'var(--bg-color)',
                     borderRadius: '24px',
                     padding: '1.5rem',
                     height: 'fit-content',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                    boxShadow: 'var(--shadow-md)'
                 }}>
                     <h3 className="google-font" style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', marginBottom: '1rem', paddingLeft: '0.5rem' }}>Study Tools</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -730,7 +767,7 @@ const LectureDetailView = ({
                             style={{ height: '100%', flex: 1 }}
                         >
                             {activeTab === 'notes' && (
-                                <div className="lab-card" style={{ padding: '3rem', background: 'white', borderRadius: '32px', border: 'none', minHeight: '100%' }}>
+                                <div className="lab-card" style={{ padding: '3rem', background: 'var(--bg-color)', borderRadius: '32px', border: 'none', minHeight: '100%' }}>
                                     <div className="markdown-content">
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                             {selectedLecture.transcript}
@@ -774,110 +811,539 @@ const SubjectDetailView = ({
     saveLectureToDB,
     lectures,
     setSelectedLecture,
+    timetableRef,
+    exams,
+    removeLecture,
+    removeSubject,
+    setShowExamModal,
+    setNewExam,
+    generateAndSaveRoadmap,
     setViewMode,
-    timetableRef
-}) => (
-    <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-    >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-            <button
-                onClick={() => { setSelectedSubject(null); setLectures([]); }}
-                className="btn-modern btn-glass"
-                style={{ padding: '0.6rem', borderRadius: '50%' }}
-            >
-                <ChevronRight size={24} style={{ transform: 'rotate(180deg)' }} />
-            </button>
-            <div>
-                <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
-                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Subject Workspace</p>
-            </div>
-        </div>
+    deleteRoadmap
+}) => {
+    const [generatingRoadmap, setGeneratingRoadmap] = useState(false);
 
-        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-            {/* Main Area: Audio Lab & Notes */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                {/* Isolated Recorder Component */}
-                <AudioRecorder onSave={saveLectureToDB} />
+    const subjectExams = exams.filter(e => {
+        const match = e.subjectName?.trim().toLowerCase() === selectedSubject.name?.trim().toLowerCase();
+        if (!match) return false;
 
-                {/* Recent Lectures List (New) */}
+        const examDate = parseLocalDate(e.examDate);
+        const today = new Date();
+        examDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return examDate >= today;
+    });
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                <button
+                    onClick={() => { setSelectedSubject(null); setLectures([]); }}
+                    className="btn-modern btn-glass"
+                    style={{ padding: '0.6rem', borderRadius: '50%' }}
+                >
+                    <ArrowLeft size={24} />
+                </button>
                 <div>
-                    <h3 className="google-font" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Your Lectures</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                        {lectures.length === 0 && (
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', width: '100%', fontStyle: 'italic' }}>
-                                No lectures recorded yet. Start recording above!
-                            </p>
-                        )}
-                        {lectures.map((lecture, i) => {
-                            const lectureNumber = lectures.length - i;
-                            // Use the exact same gradient as the home page (brand blue)
-                            const bg = 'var(--grad-primary)';
+                    <h2 className="google-font" style={{ margin: 0, fontSize: '2rem' }}>{selectedSubject.name}</h2>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Subject Workspace</p>
+                </div>
 
-                            return (
+                <div style={{ marginLeft: 'auto' }}>
+                    <button
+                        onClick={(e) => removeSubject(e, selectedSubject.id, selectedSubject.name)}
+                        className="btn-modern btn-glass"
+                        style={{ color: '#e53e3e', border: '1px solid rgba(229, 62, 62, 0.2)' }}
+                    >
+                        <Trash2 size={18} /> Delete Subject
+                    </button>
+                </div>
+            </div>
+
+            <div className="dashboard-grid">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <AudioRecorder onSave={saveLectureToDB} />
+                    <div>
+                        <h3 className="google-font" style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Your Lectures</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                            {lectures.length === 0 && (
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                                    No lectures recorded yet. Start recording above!
+                                </p>
+                            )}
+                            {lectures.map((lecture, i) => (
                                 <div
                                     key={lecture.id}
                                     onClick={() => { setSelectedLecture(lecture); setViewMode('lecture'); }}
                                     style={{
-                                        background: bg,
+                                        background: 'var(--grad-primary)',
                                         borderRadius: '20px',
                                         padding: '1.5rem',
                                         cursor: 'pointer',
-                                        border: 'none',
-                                        transition: 'all 0.2s ease',
                                         color: 'white',
                                         boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
                                     }}
                                     className="lecture-card-hover"
                                 >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                        <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700 }}>
-                                            {lectureNumber}
-                                        </div>
-                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem' }}>
-                                            {i === 0 ? 'Latest' : 'Saved'}
-                                        </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.4rem', borderRadius: '10px' }}><FileText size={20} /></div>
+                                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.3rem 0.6rem', borderRadius: '8px', fontSize: '0.7rem' }}>{i === 0 ? 'LATEST' : 'SAVED'}</div>
                                     </div>
-                                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 600 }}>{lecture.title}</h4>
-                                    <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Clock size={14} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString() || 'Just now'}
-                                    </div>
+                                    <h4 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{lecture.title}</h4>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.8 }}><Clock size={12} /> {new Date(lecture.createdAt?.seconds * 1000).toLocaleDateString()}</div>
                                 </div>
-                            )
-                        })}
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Sidebar */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Next Exam</h3>
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                        <Calendar size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-                        <p>No exams scheduled.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 className="google-font" style={{ fontSize: '1.1rem', margin: 0 }}>Next Exam</h3>
+                            <button
+                                className="btn-modern btn-glass"
+                                style={{ padding: '0.4rem 0.8rem' }}
+                                onClick={() => {
+                                    setNewExam(prev => ({ ...prev, subjectName: selectedSubject.name }));
+                                    setShowExamModal(true);
+                                }}
+                            >
+                                <Plus size={14} /> Add
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                            {subjectExams.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    <p>No exams scheduled.</p>
+                                </div>
+                            ) : (
+                                subjectExams.slice(0, 2).map((exam, i) => (
+                                    <div key={exam.id || i} style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <Calendar size={18} color="var(--google-red)" />
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{new Date(exam.examDate).toLocaleDateString()}</div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
+                            <button
+                                className="btn-modern btn-solid"
+                                style={{ width: '100%', padding: '0.8rem', background: 'var(--grad-primary)', border: 'none' }}
+                                onClick={async () => {
+                                    if (selectedSubject.roadmap) {
+                                        setViewMode('roadmap');
+                                    } else {
+                                        setGeneratingRoadmap(true);
+                                        await generateAndSaveRoadmap();
+                                        setGeneratingRoadmap(false);
+                                    }
+                                }}
+                                disabled={generatingRoadmap}
+                            >
+                                {generatingRoadmap ? (
+                                    <><Loader2 size={18} className="spinner" /> Generating...</>
+                                ) : (
+                                    <><Sparkles size={18} /> {selectedSubject.roadmap ? 'View Study Roadmap' : 'Generate Study Roadmap'}</>
+                                )}
+                            </button>
+                            {selectedSubject.roadmap && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm('Are you sure you want to clear this roadmap?')) {
+                                            deleteRoadmap(selectedSubject.id);
+                                        }
+                                    }}
+                                    className="btn-modern btn-glass"
+                                    style={{ width: '100%', marginTop: '0.5rem', padding: '0.6rem', color: '#e53e3e', fontSize: '0.8rem' }}
+                                >
+                                    <Trash2 size={14} /> Reset Roadmap
+                                </button>
+                            )}
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '0.8rem' }}>
+                                Powered by AI pipeline integration.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
+        </motion.div>
+    );
+};
+
+const SettingsView = ({ onBack, user, glassIntensity, setGlassIntensity }) => {
+    const [settings, setSettings] = useState({
+        aiModel: 'gemini-1.5-flash',
+        quality: 'high',
+        autoQuiz: true,
+        animations: true,
+        language: 'English'
+    });
+
+    const SettingRow = ({ icon: Icon, label, description, children }) => (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem', background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ padding: '0.75rem', background: 'var(--google-blue-light)', borderRadius: '12px', color: 'var(--google-blue)' }}>
+                    <Icon size={20} />
+                </div>
+                <div>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{label}</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{description}</p>
+                </div>
+            </div>
+            {children}
         </div>
-    </motion.div>
-);
+    );
 
-const Dashboard = ({ user, onLogout }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ padding: '0.5rem', borderRadius: '12px' }}>
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="google-font" style={{ fontSize: '2rem', margin: 0 }}>Global Settings</h2>
+            </div>
+
+            <section style={{ marginBottom: '3rem' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--google-blue)' }}>AI & Intelligence</h3>
+                <SettingRow
+                    icon={Cpu}
+                    label="AI Model"
+                    description="Choose the engine powering your lecture analysis"
+                >
+                    <select
+                        value={settings.aiModel}
+                        onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
+                        style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    >
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Brainy)</option>
+                    </select>
+                </SettingRow>
+
+                <SettingRow
+                    icon={Sparkles}
+                    label="Auto-generate Quiz"
+                    description="Automatically create quizzes after every lecture"
+                >
+                    <input
+                        type="checkbox"
+                        checked={settings.autoQuiz}
+                        onChange={() => setSettings({ ...settings, autoQuiz: !settings.autoQuiz })}
+                        style={{ width: '20px', height: '20px', accentColor: 'var(--google-blue)' }}
+                    />
+                </SettingRow>
+            </section>
+
+            <SettingRow
+                icon={Volume2}
+                label="Glassmorphism Intensity"
+                description="Adjust the blur effect of the user interface"
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <input
+                        type="range"
+                        min="0" max="40"
+                        value={glassIntensity}
+                        onChange={(e) => setGlassIntensity(parseInt(e.target.value))}
+                        style={{ accentColor: 'var(--google-blue)', width: '150px' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, width: '40px', textAlign: 'right' }}>{glassIntensity}px</span>
+                </div>
+            </SettingRow>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button className="btn-modern btn-glass" style={{ padding: '0.8rem 2rem' }}>Reset Defaults</button>
+                <button
+                    className="btn-modern btn-solid"
+                    style={{ padding: '0.8rem 2rem' }}
+                    onClick={() => {
+                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                        onBack();
+                    }}
+                >
+                    Save Changes
+                </button>
+            </div>
+        </motion.div>
+    );
+};
+
+const ProfileView = ({ onBack, user, userProfile, setUserProfile, setViewMode }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            style={{ maxWidth: '600px', margin: '4rem auto', padding: '3rem', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', borderRadius: '32px', border: '1px solid var(--border-color)', textAlign: 'center' }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ marginRight: '1rem', padding: '0.5rem' }}>
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="google-font" style={{ margin: 0, fontSize: '1.5rem' }}>My Profile</h2>
+            </div>
+
+            <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 2rem' }}>
+                <img
+                    src={(avatars && avatars.find(a => a.id === userProfile?.avatar)?.src) || (avatars && avatars[0]?.src)}
+                    alt="Profile"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', border: '4px solid white', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
+                />
+                <button
+                    onClick={() => setViewMode('select-avatar')}
+                    style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        background: 'var(--google-blue)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '36px',
+                        height: '36px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    <RefreshCw size={16} />
+                </button>
+            </div>
+
+            <h3 style={{ fontSize: '1.8rem', marginBottom: '0.5rem', fontWeight: 700 }}>{userProfile?.nickname || user.displayName}</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{user.email}</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                Joined: {userProfile?.joinedAt?.seconds
+                    ? new Date(userProfile.joinedAt.seconds * 1000).toLocaleDateString()
+                    : user.metadata?.creationTime
+                        ? new Date(user.metadata.creationTime).toLocaleDateString()
+                        : 'Just now'}
+            </p>
+
+            <div style={{ textAlign: 'left', marginTop: '3rem', padding: '2rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
+                <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Account Settings</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Nickname</label>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <input
+                                type="text"
+                                defaultValue={userProfile?.nickname || user.displayName}
+                                id="nickname-input"
+                                style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
+                            />
+                            <button
+                                className="btn-modern btn-solid"
+                                onClick={async () => {
+                                    const newNickname = document.getElementById('nickname-input').value;
+                                    if (newNickname.trim()) {
+                                        try {
+                                            const { updateUserProfile } = await import('../services/db');
+                                            await updateUserProfile(user.uid, { nickname: newNickname });
+                                            // Optimistic update
+                                            if (setUserProfile) {
+                                                setUserProfile(prev => ({ ...prev, nickname: newNickname }));
+                                            }
+                                            alert("Nickname updated!");
+                                        } catch (e) {
+                                            console.error("Error updating nickname:", e);
+                                            alert("Failed to update nickname.");
+                                        }
+                                    }
+                                }}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+const RoadmapView = ({ subject, onBack, onGenerate }) => {
+    const [generating, setGenerating] = useState(false);
+
+    if (!subject.roadmap) {
+        return (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+                <div style={{ background: 'white', padding: '3rem', borderRadius: '32px', maxWidth: '600px', margin: '0 auto', border: '1px solid var(--border-color)' }}>
+                    <Sparkles size={48} color="var(--google-blue)" style={{ marginBottom: '1.5rem' }} />
+                    <h2 className="google-font">No Roadmap Generated Yet</h2>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                        Create a 7-day master plan specifically for your upcoming {subject.name} exam based on all your lecture notes.
+                    </p>
+                    <button
+                        className="btn-modern btn-solid"
+                        style={{ padding: '1rem 2.5rem' }}
+                        onClick={async () => {
+                            setGenerating(true);
+                            await onGenerate();
+                            setGenerating(false);
+                        }}
+                        disabled={generating}
+                    >
+                        {generating ? (
+                            <><Loader2 size={20} className="spinner" /> Crafting your plan...</>
+                        ) : (
+                            <><Sparkles size={20} /> Generate Mastery Roadmap</>
+                        )}
+                    </button>
+                    <div style={{ marginTop: '1.5rem' }}>
+                        <button onClick={onBack} className="btn-modern btn-glass">Maybe later</button>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
+
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                <button onClick={onBack} className="btn-modern btn-glass" style={{ padding: '0.6rem', borderRadius: '50%' }}>
+                    <ArrowLeft size={24} />
+                </button>
+                <div>
+                    <h2 className="google-font" style={{ margin: 0, fontSize: '2.5rem' }}>Full Study Roadmap</h2>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Step-by-step strategy for {subject.name}</p>
+                </div>
+                <button
+                    className="btn-modern btn-glass"
+                    style={{ marginLeft: 'auto' }}
+                    onClick={async () => {
+                        setGenerating(true);
+                        await onGenerate();
+                        setGenerating(false);
+                    }}
+                    disabled={generating}
+                >
+                    {generating ? <Loader2 size={16} className="spinner" /> : <RefreshCw size={16} />}
+                    Regenerate
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {subject.roadmap.map((phase, idx) => (
+                    <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        style={{
+                            background: 'white',
+                            padding: '2.5rem',
+                            borderRadius: '32px',
+                            border: '1px solid var(--border-color)',
+                            boxShadow: 'var(--shadow-sm)',
+                            position: 'relative',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <div style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '8px',
+                            background: ['#4285F4', '#34A853', '#FBBC05', '#EA4335'][idx % 4]
+                        }} />
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                            <div>
+                                <span style={{
+                                    fontSize: '0.8rem',
+                                    fontWeight: 800,
+                                    color: ['#4285F4', '#34A853', '#FBBC05', '#EA4335'][idx % 4],
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '2px'
+                                }}>
+                                    {phase.duration}
+                                </span>
+                                <h3 className="google-font" style={{ fontSize: '1.8rem', margin: '0.5rem 0' }}>{phase.phaseName}</h3>
+                            </div>
+                            <div style={{
+                                background: 'var(--bg-secondary)',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '12px',
+                                fontSize: '0.9rem',
+                                fontWeight: 600
+                            }}>
+                                Focus: {phase.focus}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                            {phase.tasks.map((task, i) => (
+                                <div key={i} style={{
+                                    display: 'flex',
+                                    gap: '1rem',
+                                    padding: '1rem',
+                                    background: 'var(--bg-secondary)',
+                                    borderRadius: '16px',
+                                    alignItems: 'center'
+                                }}>
+                                    <div style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        borderRadius: '50%',
+                                        border: '2px solid var(--border-color)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 800
+                                    }}>
+                                        {i + 1}
+                                    </div>
+                                    <span style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{task}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+        </motion.div>
+    );
+};
+
+const Dashboard = ({
+    user, userProfile, setUserProfile, onLogout, subjects, setSubjects,
+    selectedSubject, setSelectedSubject, viewMode, setViewMode,
+    glassIntensity, setGlassIntensity, floatingTimer, setFloatingTimer,
+    timerActive, totalSeconds, remainingSeconds, timerRunning,
+    startTimer, toggleTimerPlayPause, resetTimer, stopTimer
+}) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
     const [showSubjectModal, setShowSubjectModal] = useState(false);
+    const [showExamModal, setShowExamModal] = useState(false);
+    const [exams, setExams] = useState([]);
+    const [newExam, setNewExam] = useState({ subjectName: '', examDate: '', syncToCalendar: false });
+    const [calendarAuthorized, setCalendarAuthorized] = useState(false);
+    const [calendarInitialized, setCalendarInitialized] = useState(false);
 
     // Navigation State
-    const [selectedSubject, setSelectedSubject] = useState(null);
     const [selectedLecture, setSelectedLecture] = useState(null);
-    const [viewMode, setViewMode] = useState('subject'); // 'subject', 'lecture', 'flashcards'
 
-    const [subjects, setSubjects] = useState([]);
     const [lectures, setLectures] = useState([]);
+    const [recentActivities, setRecentActivities] = useState([]);
     const [newSubject, setNewSubject] = useState('');
 
     const timerRef = useRef(null);
@@ -885,17 +1351,75 @@ const Dashboard = ({ user, onLogout }) => {
     const timetableRef = useRef(null);
 
     // Initial User Setup & Data Fetching
+    // Initial User Setup & Data Fetching
+    // userProfile is passed from App.jsx
+
+
+
     useEffect(() => {
+        const unsubscribes = [];
         if (user) {
-            import('../services/db').then(({ initializeUser, subscribeToSubjects }) => {
-                initializeUser(user);
-                const unsubscribe = subscribeToSubjects(user.uid, (data) => {
+            import('../services/db').then(async ({ initializeUser, subscribeToSubjects, subscribeToExams, subscribeToRecentActivity }) => {
+                await initializeUser(user);
+
+                const unsubSubjects = subscribeToSubjects(user.uid, (data) => {
                     setSubjects(data);
                 });
-                return () => unsubscribe();
+                const unsubExams = subscribeToExams(user.uid, (data) => {
+                    setExams(data);
+                });
+                const unsubActivities = subscribeToRecentActivity(user.uid, 3, (data) => {
+                    setRecentActivities(data);
+                });
+                unsubscribes.push(unsubSubjects, unsubExams, unsubActivities);
+            });
+
+            // Initialize Google Calendar and check saved auth status
+            import('../services/calendar').then(async ({ initializeGoogleCalendar, isCalendarAuthorized, refreshCalendarToken }) => {
+                const { getCalendarAuthStatus } = await import('../services/db');
+
+                await initializeGoogleCalendar();
+                setCalendarInitialized(true);
+
+                // Check if user previously authorized calendar
+                const savedAuthStatus = await getCalendarAuthStatus(user.uid);
+                let currentAuthStatus = isCalendarAuthorized();
+
+                if (savedAuthStatus && !currentAuthStatus) {
+                    console.log('ℹ️ User previously authorized calendar, attempting silent refresh...');
+                    const refreshed = await refreshCalendarToken(user.email);
+                    if (refreshed) {
+                        currentAuthStatus = true;
+                        console.log('✨ Session restored silently!');
+                    } else {
+                        console.log('❌ Silent refresh failed');
+                    }
+                }
+
+                if (savedAuthStatus || currentAuthStatus) {
+                    setCalendarAuthorized(true);
+                }
+                console.log('📊 Calendar auth status:', currentAuthStatus ? 'Active' : savedAuthStatus ? 'Previously authorized' : 'Not authorized');
             });
         }
+        return () => {
+            unsubscribes.forEach(unsub => unsub && typeof unsub === 'function' && unsub());
+        };
     }, [user]);
+
+    const handleAvatarSave = async (avatarId) => {
+        try {
+            const { updateUserProfile } = await import('../services/db');
+            await updateUserProfile(user.uid, { avatar: avatarId });
+            setUserProfile(prev => ({ ...prev, avatar: avatarId }));
+        } catch (error) {
+            console.error("Failed to save avatar:", error);
+            alert("Failed to save avatar. Please try again.");
+        }
+    };
+
+    // Force Avatar Selection if new user (no avatar set)
+
 
     // Fetch Lectures when Subject is Selected
     useEffect(() => {
@@ -911,34 +1435,179 @@ const Dashboard = ({ user, onLogout }) => {
         }
     }, [user, selectedSubject]);
 
+    // Cleanup past exams
+    useEffect(() => {
+        if (exams.length > 0 && calendarAuthorized) {
+            const cleanupPastExams = async () => {
+                const { cleanupPastEvents } = await import('../services/calendar');
+                const { deleteExam } = await import('../services/db');
+
+                const pastExamIds = await cleanupPastEvents(exams);
+                // Delete past exams from database
+                for (const examId of pastExamIds) {
+                    await deleteExam(user.uid, examId);
+                }
+            };
+            cleanupPastExams();
+        }
+    }, [exams, calendarAuthorized, user]);
+
+    // Verify calendar sync status (detect external deletions)
+    useEffect(() => {
+        if (exams.length > 0 && calendarAuthorized && user) {
+            const verifySyncs = async () => {
+                const { verifyAllExamSyncs } = await import('../services/calendar');
+                const { deleteExam } = await import('../services/db');
+
+                // Callback to delete exam if event was deleted externally
+                const deleteCallback = async (examId) => {
+                    await deleteExam(user.uid, examId);
+                    console.log('🗑️ Deleted exam from timetable (removed from Google Calendar externally)');
+                };
+
+                await verifyAllExamSyncs(exams, user.uid, deleteCallback);
+            };
+
+            // Run verification every 30 seconds
+            const interval = setInterval(verifySyncs, 30000);
+            verifySyncs(); // Run immediately on mount
+
+            return () => clearInterval(interval);
+        }
+    }, [exams, calendarAuthorized, user]);
+
     // Recording logic moved to AudioRecorder component for performance
     const saveLectureToDB = async (rawText) => {
         if (!user || !selectedSubject) return;
 
         try {
+            console.log("Starting note generation for subject:", selectedSubject.name);
             // 1. Call Backend API to generate structured notes
             const { generateNotes } = await import('../services/api');
-            const structuredNotes = await generateNotes(rawText, selectedSubject.name);
-            if (!structuredNotes) throw new Error("No notes returned from AI");
+
+            // Clean the text before sending to AI
+            const cleanedTranscript = cleanText(rawText);
+            console.log("Original Text Length:", rawText.length);
+            console.log("Cleaned Text Length:", cleanedTranscript.length);
+            console.log("Cleaned Text Preview:", cleanedTranscript.slice(0, 100));
+
+            const result = await generateNotes(cleanedTranscript, selectedSubject.name);
+            if (!result || !result.notes) throw new Error("No notes returned from AI");
+
+            const structuredNotes = result.notes;
+
+            // Extract a title from the notes or use AI title
+            let extractedTitle = result.title || `Lecture ${lectures.length + 1}`;
+
+            if (!result.title) {
+                const lines = structuredNotes.split('\n');
+                const subjectLower = selectedSubject.name.toLowerCase().trim();
+
+                for (const line of lines) {
+                    const cleanLine = line.trim().replace(/^[\*\#\s\_]+|[\*\#\s\_]+$/g, '');
+                    if (!cleanLine || cleanLine.length < 3) continue;
+
+                    const cleanLower = cleanLine.toLowerCase();
+                    if (cleanLower === subjectLower ||
+                        cleanLower === `${subjectLower} notes` ||
+                        cleanLower === `about ${subjectLower}`) continue;
+
+                    const originalLine = line.trim();
+                    if (originalLine.startsWith('#') ||
+                        (originalLine.startsWith('**') && originalLine.endsWith('**')) ||
+                        originalLine.toLowerCase().startsWith('topic:') ||
+                        originalLine.toLowerCase().startsWith('title:')) {
+
+                        let crispTitle = cleanLine.replace(/^(topic|title):\s*/i, '');
+                        crispTitle = crispTitle.replace(/^(understanding|introduction to|basics of|intro to|lecture:|notes on|chapter:|about|overview of)\s+/i, '');
+                        crispTitle = crispTitle.split(/[\-\–\—\:]/)[0].trim();
+                        crispTitle = crispTitle.replace(/\s+(an introduction|basics|notes|overview|series|lecture)$/i, '');
+
+                        if (crispTitle.toLowerCase().includes(':')) {
+                            const parts = crispTitle.split(':');
+                            const firstPart = parts[0].toLowerCase().trim();
+                            if (firstPart === subjectLower || firstPart.includes('lecture') || firstPart.includes('notes')) {
+                                crispTitle = parts.slice(1).join(':').trim();
+                            }
+                        }
+
+                        const words = crispTitle.split(/\s+/).filter(w => w.length > 0);
+                        extractedTitle = words.slice(0, 2).join(' ').replace(/[\:\-\s]+$/, '').trim();
+                        break;
+                    }
+                }
+            }
 
             // 2. Save both raw and structured (or just structured)
-            // Storing structuredNotes as the main 'transcript' used for study
             const lectureData = {
-                title: `Lecture ${lectures.length + 1}`,
-                transcript: structuredNotes, // Using AI generated notes
-                rawTranscript: rawText, // Keeping raw just in case
+                title: extractedTitle,
+                transcript: structuredNotes,
+                rawTranscript: rawText,
                 duration: 0,
-                summary: structuredNotes.replace ? structuredNotes.slice(0, 100) + '...' : 'No summary',
+                summary: structuredNotes.slice(0, 100) + '...',
                 type: 'Recording'
             };
 
-            const { addLecture } = await import('../services/db');
+            const { addLecture, logActivity } = await import('../services/db');
             await addLecture(user.uid, selectedSubject.id, lectureData);
+            await logActivity(user.uid, {
+                type: 'note',
+                text: `Generated notes for ${selectedSubject.name}`
+            });
             console.log("Lecture saved!");
         } catch (error) {
             console.error("Failed to save lecture:", error);
-            alert("Error processing notes: " + (error.message || "Unknown error"));
+            alert("⚠️ Generation Error: " + (error.message || "Something went wrong") + "\n\nPlease check your internet connection or the length of the transcript.");
             throw error; // Re-throw so AudioRecorder knows it failed
+        }
+    };
+
+    const removeSubject = async (e, subjectId, subjectName) => {
+        if (e) e.stopPropagation();
+        const confirmed = window.confirm(
+            `⚠️ DANGER: Are you sure you want to delete "${subjectName}"?\n\n` +
+            `This will permanently remove the subject and ALL associated notes, flashcards, and quizzes. This action cannot be undone.`
+        );
+
+        if (confirmed) {
+            try {
+                const { deleteSubject, logActivity } = await import('../services/db');
+                await deleteSubject(user.uid, subjectId);
+                await logActivity(user.uid, {
+                    type: 'subject',
+                    text: `Deleted subject (and all its notes): ${subjectName}`
+                });
+                // Redirect to main dashboard
+                setSelectedSubject(null);
+                setLectures([]);
+                setSelectedLecture(null);
+                setViewMode('dashboard');
+            } catch (error) {
+                console.error("Failed to delete subject:", error);
+                alert("Failed to delete subject.");
+            }
+        }
+    };
+
+    const removeLecture = async (e, lectureId, lectureTitle) => {
+        if (e) e.stopPropagation();
+        if (window.confirm(`Are you sure you want to delete "${lectureTitle}"?`)) {
+            try {
+                const { deleteLecture, logActivity } = await import('../services/db');
+                await deleteLecture(user.uid, selectedSubject.id, lectureId);
+                await logActivity(user.uid, {
+                    type: 'note',
+                    text: `Deleted lecture: ${lectureTitle}`
+                });
+                // If we are currently viewing this lecture, go back to subject view
+                if (selectedLecture && selectedLecture.id === lectureId) {
+                    setSelectedLecture(null);
+                    setViewMode('subject');
+                }
+            } catch (error) {
+                console.error("Failed to delete lecture:", error);
+                alert("Failed to delete lecture.");
+            }
         }
     };
 
@@ -954,13 +1623,158 @@ const Dashboard = ({ user, onLogout }) => {
             const color = colors[Math.floor(Math.random() * colors.length)];
 
             try {
-                const { addSubject } = await import('../services/db');
-                await addSubject(user.uid, newSubject, color);
+                const { addSubject: dbAddSubject, logActivity } = await import('../services/db');
+                await dbAddSubject(user.uid, newSubject, color);
+                await logActivity(user.uid, {
+                    type: 'subject',
+                    text: `Created subject: ${newSubject}`
+                });
                 setNewSubject('');
                 setShowSubjectModal(false);
             } catch (error) {
                 console.error("Error adding subject:", error);
                 alert("Failed to create subject. Check console.");
+            }
+        }
+    };
+
+    const addExam = async () => {
+        if (newExam.subjectName.trim() && newExam.examDate && user) {
+            try {
+                console.log('🎯 Adding exam:', newExam);
+                console.log('📊 Calendar status:', { authorized: calendarAuthorized, syncRequested: newExam.syncToCalendar });
+
+                const examData = {
+                    subjectName: newExam.subjectName.trim(),
+                    examDate: newExam.examDate
+                };
+
+                // Add to database first
+                const { addExam: dbAddExam, updateExamCalendarId, logActivity } = await import('../services/db');
+                const examId = await dbAddExam(user.uid, examData);
+                await logActivity(user.uid, {
+                    type: 'exam',
+                    text: `Scheduled exam for ${newExam.subjectName}`
+                });
+                console.log('✅ Exam saved to database, ID:', examId);
+
+                // If calendar sync is enabled, create calendar event
+                if (newExam.syncToCalendar && calendarAuthorized) {
+                    console.log('📅 Syncing to Google Calendar...');
+                    try {
+                        const { createExamEvent, isCalendarAuthorized, refreshCalendarToken } = await import('../services/calendar');
+
+                        // Check if we still have a valid token
+                        if (!isCalendarAuthorized()) {
+                            console.log('🔄 Token missing during sync, attempting silent refresh...');
+                            const refreshed = await refreshCalendarToken(user.email);
+                            if (!refreshed) {
+                                throw new Error("Google Calendar session expired. Please re-link your account.");
+                            }
+                        }
+
+                        const eventId = await createExamEvent(examData);
+                        console.log('✅ Calendar event created, ID:', eventId);
+
+                        // Update exam with calendar event ID
+                        await updateExamCalendarId(user.uid, examId, eventId);
+                        console.log('✅ Database updated with calendar event ID');
+                    } catch (calError) {
+                        console.error("❌ Failed to create calendar event:", calError);
+                        if (calError.message?.includes("session expired")) {
+                            setCalendarAuthorized(false); // Update UI to show disconnect
+                        }
+                        alert("Exam added but failed to sync to Google Calendar. Error: " + (calError.message || 'Unknown error'));
+                    }
+                    console.log('ℹ️ Skipping calendar sync:', !newExam.syncToCalendar ? 'Not requested' : 'Not authorized');
+                }
+
+                setNewExam({ subjectName: '', examDate: '', syncToCalendar: false });
+                setShowExamModal(false);
+            } catch (error) {
+                console.error("❌ Error adding exam:", error);
+                alert("Failed to add exam. Check console for details.");
+            }
+        }
+    };
+
+    const generateAndSaveRoadmap = async () => {
+        if (!user || !selectedSubject) return;
+
+        try {
+            const { generateRoadmap } = await import('../services/api');
+            const { saveSubjectRoadmap, logActivity } = await import('../services/db');
+
+            // Get next exam if it exists
+            const subjectExams = exams.filter(e => e.subjectName?.trim().toLowerCase() === selectedSubject.name?.trim().toLowerCase());
+            const nextExam = subjectExams[0];
+            const examDate = nextExam ? nextExam.examDate : null;
+
+            // Get lecture titles as topics
+            const topics = lectures.map(l => l.title);
+
+            const roadmapResult = await generateRoadmap(selectedSubject.name, examDate, lectures);
+            await saveSubjectRoadmap(user.uid, selectedSubject.id, roadmapResult);
+            await logActivity(user.uid, {
+                type: 'roadmap',
+                text: `Generated study roadmap for ${selectedSubject.name}`
+            });
+            console.log("✅ Roadmap saved!");
+            setViewMode('roadmap'); // Navigate to the new view
+        } catch (error) {
+            console.error("❌ Roadmap error:", error);
+            alert("Roadmap generation failed. Please ensure your local backend is running on port 5000 and has a valid Gemini API key.");
+        }
+    };
+    const deleteRoadmap = async (subjectId) => {
+        try {
+            const { saveSubjectRoadmap, logActivity } = await import('../services/db');
+            await saveSubjectRoadmap(user.uid, subjectId, null); // Clear roadmap
+            await logActivity(user.uid, {
+                type: 'roadmap',
+                text: `Reset roadmap for ${selectedSubject.name}`
+            });
+            console.log("Roadmap reset.");
+        } catch (error) {
+            console.error("Failed to reset roadmap:", error);
+        }
+    };
+
+    const handleCalendarAuth = async () => {
+        try {
+            const { requestCalendarAccess, isCalendarAuthorized } = await import('../services/calendar');
+            const { saveCalendarAuthStatus } = await import('../services/db');
+
+            await requestCalendarAccess(user.email);
+            const authStatus = isCalendarAuthorized();
+            setCalendarAuthorized(authStatus);
+
+            // Save authorization status to database
+            if (authStatus) {
+                await saveCalendarAuthStatus(user.uid, true);
+                console.log('✅ Calendar authorization saved to database');
+            }
+        } catch (error) {
+            console.error("Calendar authorization failed:", error);
+            alert("Failed to authorize Google Calendar access.");
+        }
+    };
+
+    const removeExam = async (examId, calendarEventId) => {
+        if (user) {
+            try {
+                // Delete from calendar first if it has an event ID
+                if (calendarEventId && calendarAuthorized) {
+                    const { deleteExamEvent } = await import('../services/calendar');
+                    await deleteExamEvent(calendarEventId);
+                }
+
+                // Then delete from database
+                const { deleteExam } = await import('../services/db');
+                await deleteExam(user.uid, examId);
+            } catch (error) {
+                console.error("Error deleting exam:", error);
+                alert("Failed to delete exam.");
             }
         }
     };
@@ -979,8 +1793,12 @@ const Dashboard = ({ user, onLogout }) => {
                 return false;
             }
 
-            const { addFlashcards } = await import('../services/db');
+            const { addFlashcards, logActivity } = await import('../services/db');
             await addFlashcards(user.uid, selectedSubject.id, selectedLecture.id, generatedCards);
+            await logActivity(user.uid, {
+                type: 'note',
+                text: `Generated flashcards for ${selectedLecture.title}`
+            });
 
             confetti({
                 particleCount: 100,
@@ -1007,6 +1825,15 @@ const Dashboard = ({ user, onLogout }) => {
         }
     }, [lectures]);
 
+    useEffect(() => {
+        if (selectedSubject) {
+            const updatedSubject = subjects.find(s => s.id === selectedSubject.id);
+            if (updatedSubject) {
+                setSelectedSubject(updatedSubject);
+            }
+        }
+    }, [subjects]);
+
 
     const generateAndSaveQuiz = async () => {
         if (!user || !selectedSubject || !selectedLecture) return false;
@@ -1022,8 +1849,12 @@ const Dashboard = ({ user, onLogout }) => {
                 return false;
             }
 
-            const { updateLectureQuiz } = await import('../services/db');
+            const { updateLectureQuiz, logActivity } = await import('../services/db');
             await updateLectureQuiz(user.uid, selectedSubject.id, selectedLecture.id, generatedQuiz);
+            await logActivity(user.uid, {
+                type: 'note',
+                text: `Generated quiz for ${selectedLecture.title}`
+            });
 
             confetti({ particleCount: 100, spread: 70, origin: { x: 0.8, y: 0.2 } });
             // setViewMode('quiz'); // Removed to keep navigation local
@@ -1037,39 +1868,63 @@ const Dashboard = ({ user, onLogout }) => {
 
 
 
-    return (
-        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: '#f8faff' }}>
-            <div className="container" style={{ padding: '2rem 1rem' }}>
+    // Force Avatar Selection if new user (no avatar set)
+    // Moved here to ensure all hooks run before conditional return
+    if (userProfile && !userProfile.avatar && viewMode !== 'profile') {
+        return (
+            <div style={{ minHeight: '100vh', background: '#f8faff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ background: 'white', borderRadius: '32px', boxShadow: '0 20px 40px rgba(0,0,0,0.08)', overflow: 'hidden', maxWidth: '800px', width: '90%' }}
+                >
+                    <AvatarSelection onSelect={handleAvatarSave} isOnboarding={true} />
+                </motion.div>
+            </div>
+        );
+    }
 
-                {/* Dashboard Header - Show only if no subject selected */}
-                {!selectedSubject && (
+    return (
+        <div className="dashboard-container" style={{ paddingTop: '80px', minHeight: '100vh', background: 'transparent', position: 'relative' }}>
+            <DoodleBackground opacity={0.25} />
+            <div className="container" style={{ padding: '2rem 1rem', position: 'relative', zIndex: 1 }}>
+
+                {/* Dashboard Header - Show only if on main overview (no subject selected and not in settings/profile) */}
+                {!selectedSubject && viewMode === 'subject' && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
                         <div>
                             <motion.h1
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="google-font"
-                                style={{ fontSize: '2.5rem', fontWeight: 700 }}
+                                style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.5rem', lineHeight: 1.2 }}
                             >
-                                Welcome back, <span className="text-gradient" style={{ background: 'var(--grad-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{user.displayName || 'Scholar'}</span>!
+                                Welcome back, <span className="text-gradient" style={{ background: 'var(--grad-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{userProfile?.nickname || user.displayName || 'Scholar'}</span>!
                             </motion.h1>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Select a subject to start recording or view notes.</p>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button className="btn-modern btn-glass" onClick={() => timetableRef.current.click()}>
-                                <Calendar size={20} /> Upload Timetable
-                                <input type="file" ref={timetableRef} hidden />
+                            <button className="btn-modern btn-glass" onClick={() => setShowExamModal(true)}>
+                                <Calendar size={20} /> Add Exam
                             </button>
-                            <button className="btn-modern btn-solid" onClick={() => setShowSubjectModal(true)}>
+                            <button className="btn-modern btn-glass" onClick={() => setShowSubjectModal(true)}>
                                 <Plus size={20} /> Add Subject
                             </button>
+
                         </div>
                     </div>
                 )}
 
                 <AnimatePresence mode="wait">
                     {/* View Router */}
-                    {viewMode === 'flashcards' && selectedLecture ? (
+                    {viewMode === 'roadmap' && selectedSubject ? (
+                        <RoadmapView
+                            key="roadmap"
+                            subject={selectedSubject}
+                            onBack={() => setViewMode('subject')}
+                            onGenerate={generateAndSaveRoadmap}
+                        />
+                    ) : viewMode === 'flashcards' && selectedLecture ? (
                         <FlashcardDeck
                             key="flashcards"
                             userId={user.uid}
@@ -1097,6 +1952,65 @@ const Dashboard = ({ user, onLogout }) => {
                             userId={user.uid}
                             subjectId={selectedSubject.id}
                         />
+                    ) : viewMode === 'learningCurve' ? (
+                        <LearningCurveView
+                            key="learningCurve"
+                            onBack={() => setViewMode('subject')}
+                            userId={user.uid}
+                            subjects={subjects}
+                        />
+                    ) : viewMode === 'settings' ? (
+                        <SettingsView
+                            key="settings"
+                            onBack={() => setViewMode('subject')}
+                            user={user}
+                            glassIntensity={glassIntensity}
+                            setGlassIntensity={setGlassIntensity}
+                        />
+                    ) : viewMode === 'study-sessions' ? (
+                        <StudySessionsView
+                            key="study-sessions"
+                            onBack={() => setViewMode('subject')}
+                            onMinimize={() => {
+                                setFloatingTimer(true);
+                                setViewMode('subject');
+                            }}
+                            timerActive={timerActive}
+                            totalSeconds={totalSeconds}
+                            remainingSeconds={remainingSeconds}
+                            timerRunning={timerRunning}
+                            startTimer={startTimer}
+                            toggleTimerPlayPause={toggleTimerPlayPause}
+                            resetTimer={resetTimer}
+                            stopTimer={stopTimer}
+                        />
+                    ) : viewMode === 'profile' ? (
+                        <ProfileView
+                            key="profile"
+                            onBack={() => setViewMode('subject')}
+                            user={user}
+                            userProfile={userProfile}
+                            setUserProfile={setUserProfile}
+                            setViewMode={setViewMode}
+                        />
+                    ) : viewMode === 'select-avatar' ? (
+                        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
+                                <button onClick={() => setViewMode('profile')} className="btn-modern btn-glass" style={{ marginRight: '1rem' }}>
+                                    <ArrowLeft size={20} />
+                                </button>
+                                <h2 className="google-font" style={{ margin: 0 }}>Change Avatar</h2>
+                            </div>
+                            <div className="lab-card" style={{ background: 'var(--bg-color)', borderRadius: '24px', padding: '1rem' }}>
+                                <AvatarSelection
+                                    onSelect={async (id) => {
+                                        await handleAvatarSave(id);
+                                        setViewMode('profile');
+                                    }}
+                                    initialAvatar={userProfile?.avatar}
+                                />
+                            </div>
+                        </div>
                     ) : selectedSubject ? (
                         <SubjectDetailView
                             key="subject"
@@ -1108,9 +2022,16 @@ const Dashboard = ({ user, onLogout }) => {
                             setSelectedLecture={setSelectedLecture}
                             setViewMode={setViewMode}
                             timetableRef={timetableRef}
+                            exams={exams}
+                            removeLecture={removeLecture}
+                            removeSubject={removeSubject}
+                            setShowExamModal={setShowExamModal}
+                            setNewExam={setNewExam}
+                            generateAndSaveRoadmap={generateAndSaveRoadmap}
+                            deleteRoadmap={deleteRoadmap}
                         />
                     ) : (
-                        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+                        <div className="dashboard-grid">
 
                             {/* Main Area: Subjects List */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -1146,7 +2067,7 @@ const Dashboard = ({ user, onLogout }) => {
                                                 </div>
                                                 <div style={{ position: 'relative', zIndex: 2 }}>
                                                     <div style={{ background: 'rgba(255,255,255,0.2)', width: 'fit-content', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, marginBottom: '1rem' }}>
-                                                        {sub.noteCount || 0} NOTES
+                                                        {Math.max(0, sub.noteCount || 0)} NOTES
                                                     </div>
                                                     <h3 className="google-font" style={{ fontSize: '1.4rem', margin: 0 }}>{sub.name}</h3>
                                                     <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
@@ -1157,9 +2078,9 @@ const Dashboard = ({ user, onLogout }) => {
                                         ))}
                                         <motion.div
                                             className="subject-card-add"
-                                            style={{ border: '2px dashed #cbd5e0', padding: '2rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#718096' }}
+                                            style={{ border: '2px dashed var(--border-color)', padding: '2rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', background: 'var(--bg-secondary)' }}
                                             onClick={() => setShowSubjectModal(true)}
-                                            whileHover={{ background: '#edf2f7' }}
+                                            whileHover={{ background: 'var(--google-blue-light)' }}
                                         >
                                             <Plus size={32} style={{ marginBottom: '0.5rem' }} />
                                             <span style={{ fontWeight: 600 }}>Add New Subject</span>
@@ -1171,57 +2092,113 @@ const Dashboard = ({ user, onLogout }) => {
                             {/* Sidebar / Stats Area - Only visible on main dashboard */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-                                {/* Quick Stats */}
-                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Study Progress</h3>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <div style={{ background: 'var(--google-blue-light)', color: 'var(--google-blue)', padding: '0.75rem', borderRadius: '12px' }}>
-                                                <Clock size={20} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Listening Time</div>
-                                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>24.5 Hours</div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <div style={{ background: 'var(--google-green-light)', color: 'var(--google-green)', padding: '0.75rem', borderRadius: '12px' }}>
-                                                <TrendingUp size={20} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Efficiency Boost</div>
-                                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>+42% Result</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
 
                                 {/* Exam Timetable Widget */}
-                                <div className="lab-card" style={{ padding: '1.5rem', background: 'white', borderRadius: '24px', border: 'none' }}>
-                                    <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Exam Timetable</h3>
-                                    <div style={{ padding: '2rem 1rem', border: '1px dashed #e2e8f0', borderRadius: '16px', textAlign: 'center' }}>
-                                        <Calendar size={32} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
-                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>No timetable uploaded yet.</p>
-                                        <button className="btn-modern btn-glass" style={{ width: '100%', fontSize: '0.8rem' }} onClick={() => timetableRef.current.click()}>
-                                            Upload PDF / Image
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                        <h3 className="google-font" style={{ fontSize: '1.1rem', margin: 0 }}>Exam Timetable</h3>
+                                        <button
+                                            className="btn-modern btn-glass"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                            onClick={() => {
+                                                setNewExam(prev => ({ ...prev, subjectName: '' }));
+                                                setShowExamModal(true);
+                                            }}
+                                        >
+                                            <Plus size={14} /> Add
                                         </button>
                                     </div>
+                                    {(() => {
+                                        const upcomingExams = exams.filter(exam => {
+                                            const examDate = parseLocalDate(exam.examDate);
+                                            const today = new Date();
+                                            examDate.setHours(0, 0, 0, 0);
+                                            today.setHours(0, 0, 0, 0);
+                                            return examDate >= today;
+                                        }).slice(0, 5);
+
+                                        if (upcomingExams.length === 0) {
+                                            return (
+                                                <div style={{ padding: '2rem 1rem', border: '1px dashed var(--border-color)', borderRadius: '16px', textAlign: 'center' }}>
+                                                    <Calendar size={32} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
+                                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No upcoming exams.</p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                {upcomingExams.map((exam) => {
+                                                    const examDate = parseLocalDate(exam.examDate);
+                                                    const today = new Date();
+                                                    const daysUntil = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+                                                    return (
+                                                        <div
+                                                            key={exam.id}
+                                                            style={{
+                                                                padding: '1rem',
+                                                                background: 'var(--bg-secondary)',
+                                                                borderRadius: '12px',
+                                                                border: '1px solid var(--border-color)',
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center'
+                                                            }}
+                                                        >
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                                                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{exam.subjectName}</span>
+                                                                    {exam.calendarEventId && (
+                                                                        <Calendar size={14} color="var(--google-blue)" title="Synced to Google Calendar" />
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                                    {examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                    {daysUntil >= 0 && ` • ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeExam(exam.id, exam.calendarEventId)}
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    padding: '0.25rem',
+                                                                    color: 'var(--text-secondary)',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center'
+                                                                }}
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Recent Activity */}
                                 <div style={{ padding: '1rem' }}>
                                     <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Recent Activity</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                        {[
-                                            { type: 'note', text: 'Introduction to AI Notes generated' },
-                                            { type: 'exam', text: 'Maths Midterm scheduled' },
-                                            { type: 'note', text: 'History of OS cleaned' }
-                                        ].map((act, i) => (
-                                            <div key={i} style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--google-blue)', marginTop: 6 }}></div>
-                                                <span>{act.text}</span>
-                                            </div>
-                                        ))}
+                                        {recentActivities.length === 0 ? (
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No recent activity yet.</p>
+                                        ) : (
+                                            recentActivities.map((act, i) => (
+                                                <div key={act.id || i} style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--google-blue)', marginTop: 6 }}></div>
+                                                    <div>
+                                                        <span>{act.text}</span>
+                                                        <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                                                            {act.timestamp ? new Date(act.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
 
@@ -1237,23 +2214,148 @@ const Dashboard = ({ user, onLogout }) => {
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }}>
                         <motion.div
                             className="lab-card"
-                            style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}
+                            style={{ width: '100%', maxWidth: '400px', padding: '2rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)' }}
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                         >
-                            <h3 className="google-font" style={{ marginBottom: '1.5rem' }}>Add New Subject</h3>
+                            <h3 className="google-font" style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Add New Subject</h3>
                             <input
                                 type="text"
                                 placeholder="Subject Name (e.g. Physics)"
-                                style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}
+                                style={{
+                                    width: '100%',
+                                    padding: '1rem',
+                                    borderRadius: '12px',
+                                    border: '1px solid var(--border-color)',
+                                    marginBottom: '1.5rem',
+                                    background: 'var(--bg-secondary)',
+                                    color: 'var(--text-primary)'
+                                }}
                                 value={newSubject}
                                 onChange={(e) => setNewSubject(e.target.value)}
                                 autoFocus
                             />
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button className="btn-modern btn-glass" style={{ flex: 1 }} onClick={() => setShowSubjectModal(false)}>Cancel</button>
-                                <button className="btn-modern btn-solid" style={{ flex: 1 }} onClick={addSubject}>Create Section</button>
+                                <button className="btn-modern btn-solid" style={{ flex: 1 }} onClick={addSubject}>Create Subject</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Exam Modal */}
+            <AnimatePresence>
+                {showExamModal && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }} onClick={() => setShowExamModal(false)}>
+                        <motion.div
+                            className="lab-card"
+                            style={{ width: '100%', maxWidth: '400px', padding: '2rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)' }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="google-font" style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Add Exam</h3>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Subject</label>
+                                <select
+                                    value={newExam.subjectName}
+                                    onChange={(e) => setNewExam({ ...newExam, subjectName: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--border-color)',
+                                        fontSize: '1rem',
+                                        background: 'var(--bg-secondary)',
+                                        color: 'var(--text-primary)'
+                                    }}
+                                >
+                                    <option value="">Select a subject</option>
+                                    {subjects.map((subject) => (
+                                        <option key={subject.id} value={subject.name}>{subject.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Exam Date</label>
+                                <input
+                                    type="date"
+                                    value={newExam.examDate}
+                                    onChange={(e) => setNewExam({ ...newExam, examDate: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--border-color)',
+                                        fontSize: '1rem',
+                                        background: 'var(--bg-secondary)',
+                                        color: 'var(--text-primary)',
+                                        colorScheme: 'light dark'
+                                    }}
+                                />
+                            </div>
+
+                            {/* Google Calendar Sync Section */}
+                            <div style={{
+                                marginBottom: '1.5rem',
+                                padding: '1rem',
+                                background: 'var(--bg-secondary)',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <label style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={newExam.syncToCalendar}
+                                            onChange={(e) => setNewExam({ ...newExam, syncToCalendar: e.target.checked })}
+                                            disabled={!calendarAuthorized}
+                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                        />
+                                        <Calendar size={16} />
+                                        Sync to Google Calendar
+                                    </label>
+                                    {calendarAuthorized ? (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--google-green)', fontWeight: 600 }}>
+                                            ✓ Connected
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={handleCalendarAuth}
+                                            className="btn-modern btn-glass"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+                                            type="button"
+                                        >
+                                            Connect
+                                        </button>
+                                    )}
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+                                    {calendarAuthorized
+                                        ? 'Exam will be added to your Google Calendar with reminders'
+                                        : 'Connect your Google Calendar to sync exams automatically'}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button className="btn-modern btn-glass" style={{ flex: 1 }} onClick={() => setShowExamModal(false)}>Cancel</button>
+                                <button
+                                    className="btn-modern btn-solid"
+                                    style={{ flex: 1 }}
+                                    onClick={addExam}
+                                    disabled={!newExam.subjectName || !newExam.examDate}
+                                >
+                                    Add Exam
+                                </button>
                             </div>
                         </motion.div>
                     </div>
