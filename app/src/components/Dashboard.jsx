@@ -1659,7 +1659,7 @@ const Dashboard = ({
                 setSelectedSubject(null);
                 setLectures([]);
                 setSelectedLecture(null);
-                setViewMode('dashboard');
+                setViewMode('subject');
             } catch (error) {
                 console.error("Failed to delete subject:", error);
                 alert("Failed to delete subject.");
