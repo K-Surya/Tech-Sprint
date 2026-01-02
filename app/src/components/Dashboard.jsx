@@ -42,6 +42,7 @@ const parseLocalDate = (dateStr) => {
 import AvatarSelection, { avatars } from './AvatarSelection';
 import { cleanText } from '../utils/textCleaner';
 import DoodleBackground from './DoodleBackground';
+import StudySessionsView from './StudySessionsView';
 import LearningCurveView from './LearningCurveView';
 
 // --- Flashcard Component ---
@@ -1321,7 +1322,13 @@ const RoadmapView = ({ subject, onBack, onGenerate }) => {
     );
 };
 
-const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setSubjects, selectedSubject, setSelectedSubject, viewMode, setViewMode, glassIntensity, setGlassIntensity }) => {
+const Dashboard = ({
+    user, userProfile, setUserProfile, onLogout, subjects, setSubjects,
+    selectedSubject, setSelectedSubject, viewMode, setViewMode,
+    glassIntensity, setGlassIntensity, floatingTimer, setFloatingTimer,
+    timerActive, totalSeconds, remainingSeconds, timerRunning,
+    startTimer, toggleTimerPlayPause, resetTimer, stopTimer
+}) => {
     const [status, setStatus] = useState('idle');
     const [file, setFile] = useState(null);
     const [transcription, setTranscription] = useState('');
@@ -1959,6 +1966,23 @@ const Dashboard = ({ user, userProfile, setUserProfile, onLogout, subjects, setS
                             user={user}
                             glassIntensity={glassIntensity}
                             setGlassIntensity={setGlassIntensity}
+                        />
+                    ) : viewMode === 'study-sessions' ? (
+                        <StudySessionsView
+                            key="study-sessions"
+                            onBack={() => setViewMode('subject')}
+                            onMinimize={() => {
+                                setFloatingTimer(true);
+                                setViewMode('subject');
+                            }}
+                            timerActive={timerActive}
+                            totalSeconds={totalSeconds}
+                            remainingSeconds={remainingSeconds}
+                            timerRunning={timerRunning}
+                            startTimer={startTimer}
+                            toggleTimerPlayPause={toggleTimerPlayPause}
+                            resetTimer={resetTimer}
+                            stopTimer={stopTimer}
                         />
                     ) : viewMode === 'profile' ? (
                         <ProfileView
