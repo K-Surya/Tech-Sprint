@@ -705,9 +705,18 @@ function App() {
                 setUser(authUser);
                 setShowAuth(false);
                 setDemoUser(null);
+
+                // Reset dashboard state for a fresh session
+                setSelectedSubject(null);
+                setViewMode('subject');
+                setIsSidebarOpen(false);
             } else {
                 setUser(null);
                 setUserProfile(null);
+                // Clear state on logout as well
+                setSelectedSubject(null);
+                setViewMode('subject');
+                setIsSidebarOpen(false);
             }
         });
         return () => {
@@ -731,12 +740,20 @@ function App() {
     const handleDemoLogin = (data) => {
         setDemoUser(data);
         setShowAuth(false);
+        // Reset dashboard state for a fresh demo session
+        setSelectedSubject(null);
+        setViewMode('subject');
+        setIsSidebarOpen(false);
     };
 
     const handleLogout = () => {
         signOut(auth);
         setDemoUser(null);
         setShowAuth(false);
+        // Reset dashboard state
+        setSelectedSubject(null);
+        setViewMode('subject');
+        setIsSidebarOpen(false);
     };
 
     const [subjects, setSubjects] = useState([]);

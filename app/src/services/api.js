@@ -1,6 +1,5 @@
-const BASE_URL = "https://tech-sprint-qn15.onrender.com/benchmate";
-// If you want to use local backend, swap with:
-// const BASE_URL = window.location.hostname === 'localhost' ? "http://localhost:5000/benchmate" : "https://tech-sprint-qn15.onrender.com/benchmate";
+const BASE_URL = window.location.hostname === 'localhost' ? "http://localhost:5000/benchmate" : "https://tech-sprint-qn15.onrender.com/benchmate";
+
 
 export const generateNotes = async (transcript, subject) => {
     try {
@@ -186,4 +185,31 @@ export const fetchLearningCurveData = async (userId, subjects) => {
         throw error;
     }
 };
+
+export const uploadNotesToDrive = async (pdfBlob, accessToken, fileName) => {
+    try {
+        const formData = new FormData();
+        formData.append("accessToken", accessToken);
+        formData.append("fileName", fileName);
+        formData.append("file", pdfBlob, fileName);
+
+        const response = await fetch(`${BASE_URL}/upload-to-drive`, {
+            method: "POST",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            // Backend returns { error: "...", details: "...", stack: "..." }
+            const serverMsg = errorData.details || errorData.error || response.statusText;
+            throw new Error(`Google Drive Proxy Error: ${serverMsg}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("API uploadNotesToDrive error:", error);
+        throw error;
+    }
+};
+
 

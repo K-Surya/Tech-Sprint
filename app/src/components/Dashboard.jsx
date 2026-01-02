@@ -31,6 +31,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { jsPDF } from 'jspdf';
+import { auth, googleProvider, db } from '../firebase';
+import { GoogleAuthProvider as FirebaseGoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 // Helper functions defined at module scope
 const parseLocalDate = (dateStr) => {
@@ -628,11 +631,104 @@ const LectureDetailView = ({
     generateAndSaveQuiz,
     userId,
     subjectId,
+    subjectName,
     removeLecture
 }) => {
     const [activeTab, setActiveTab] = useState('notes'); // 'notes', 'flashcards', 'quiz'
     const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
     const [generatingQuiz, setGeneratingQuiz] = useState(false);
+    const [savingToDrive, setSavingToDrive] = useState(false);
+
+    const handleSaveToDrive = async () => {
+        let token = localStorage.getItem('googleAccessToken');
+
+        try {
+            if (!token) {
+                const result = await signInWithPopup(auth, googleProvider);
+                const credential = FirebaseGoogleAuthProvider.credentialFromResult(result);
+                token = credential?.accessToken;
+                console.log(token);
+
+                if (token) {
+                    localStorage.setItem('googleAccessToken', token);
+                } else {
+                    throw new Error("Failed to obtain Google Access Token. Please sign in with Google.");
+                }
+            }
+
+            setSavingToDrive(true);
+
+            // Create PDF
+            const doc = new jsPDF();
+            const margin = 20;
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const maxWidth = pageWidth - (margin * 2);
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(33, 37, 41);
+            doc.text(subjectName || 'Subject Notes', margin, 25);
+
+            doc.setFontSize(16);
+            doc.text(selectedLecture.title, margin, 35);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, 42);
+
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, 46, pageWidth - margin, 46);
+
+            doc.setFontSize(11);
+            doc.setTextColor(50, 50, 50);
+            const content = selectedLecture.transcript || 'No transcript available.';
+            const splitText = doc.splitTextToSize(content, maxWidth);
+
+            let y = 55;
+            const lineHeight = 7;
+            for (let i = 0; i < splitText.length; i++) {
+                if (y > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin;
+                }
+                doc.text(splitText[i], margin, y);
+                y += lineHeight;
+            }
+
+            const pdfBlob = doc.output('blob');
+            const dateStr = new Date().toISOString().split('T')[0];
+            const fileName = `${(subjectName || 'Subject').replace(/\s+/g, '_')}_${dateStr}_Notes.pdf`;
+
+            // Call Backend API instead of Google directly to avoid CORS
+            const { uploadNotesToDrive } = await import('../services/api');
+            const result = await uploadNotesToDrive(pdfBlob, token, fileName);
+
+            if (result.success) {
+                alert('Notes saved to your Google Drive successfully via proxy!');
+            } else {
+                throw new Error("Failed to upload via proxy.");
+            }
+        } catch (error) {
+            console.error('[Drive Save Exception]:', error);
+
+            const isAuthError = error.message.includes("401") ||
+                error.message.includes("403") ||
+                error.message.includes("Authentication expired") ||
+                error.message.includes("insufficient authentication scopes");
+
+            if (isAuthError) {
+                localStorage.removeItem('googleAccessToken');
+                alert("Authorization error: Your session might be missing required permissions. Please click 'Save to Drive' again to re-authorize with the correct permissions.");
+            } else {
+                alert(`Error: ${error.message}`);
+            }
+        } finally {
+            setSavingToDrive(false);
+        }
+    };
+
 
     const tabs = [
         { id: 'notes', label: 'Lecture Notes', icon: FileText, visible: true },
@@ -716,6 +812,38 @@ const LectureDetailView = ({
                         </button>
                     )}
                 </div>
+            </div>
+
+            {/* Row for Secondary Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
+                {activeTab === 'notes' && (
+                    <button
+                        className="btn-modern btn-glass"
+                        onClick={handleSaveToDrive}
+                        disabled={savingToDrive}
+                        style={{
+                            color: 'var(--google-blue)',
+                            border: '1px solid rgba(66, 133, 244, 0.2)',
+                            padding: '0.8rem 1.5rem',
+                            cursor: savingToDrive ? 'wait' : 'pointer',
+                            opacity: savingToDrive ? 0.7 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.8rem',
+                            background: '#fff',
+                            borderRadius: '16px',
+                            fontWeight: 700,
+                            boxShadow: '0 4px 15px rgba(66, 133, 244, 0.12)',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        {savingToDrive ? (
+                            <><Loader2 size={20} className="spinner" /> Saving to Drive...</>
+                        ) : (
+                            <><Download size={20} /> Save Notes to Google Drive</>
+                        )}
+                    </button>
+                )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', flex: 1, minHeight: 0 }}>
@@ -1349,6 +1477,13 @@ const Dashboard = ({
     const timerRef = useRef(null);
     const fileInputRef = useRef(null);
     const timetableRef = useRef(null);
+
+    // Reset local navigation when global session changes
+    useEffect(() => {
+        if (!user || !selectedSubject) {
+            setSelectedLecture(null);
+        }
+    }, [user, selectedSubject]);
 
     // Initial User Setup & Data Fetching
     // Initial User Setup & Data Fetching
@@ -2187,7 +2322,7 @@ const Dashboard = ({
                                 </div>
 
                                 {/* Recent Activity */}
-                                <div style={{ padding: '1rem' }}>
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                                     <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Recent Activity</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {recentActivities.length === 0 ? (
@@ -2207,15 +2342,14 @@ const Dashboard = ({
                                         )}
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
 
             {/* Subject Modal */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {showSubjectModal && (
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }}>
                         <motion.div
@@ -2249,10 +2383,10 @@ const Dashboard = ({
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence >
 
             {/* Exam Modal */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {showExamModal && (
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }} onClick={() => setShowExamModal(false)}>
                         <motion.div
@@ -2366,8 +2500,8 @@ const Dashboard = ({
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
-        </div>
+            </AnimatePresence >
+        </div >
     );
 };
 
