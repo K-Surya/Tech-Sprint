@@ -185,7 +185,7 @@ const Navbar = ({ scrolled, user, userProfile, onAuthClick, isDashboard, theme, 
     </nav>
 );
 
-const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, currentSubject, onStudyTimer }) => {
+const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, currentSubject, onStudyTimer, viewMode }) => {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -265,8 +265,16 @@ const Sidebar = ({ isOpen, onClose, user, onLogout, subjects, onNavigate, curren
                                             padding: '0.85rem 1rem',
                                             borderRadius: '12px',
                                             border: 'none',
-                                            background: (item.label === 'Dashboard' && !currentSubject) ? 'var(--google-blue-light)' : 'transparent',
-                                            color: (item.label === 'Dashboard' && !currentSubject) ? 'var(--google-blue)' : 'var(--text-primary)',
+                                            background: (
+                                                (item.label === 'Dashboard' && viewMode === 'subject' && !currentSubject) ||
+                                                (item.label === 'Learning Curve' && viewMode === 'learningCurve') ||
+                                                (item.label === 'Study Sessions' && viewMode === 'study-sessions')
+                                            ) ? 'var(--google-blue-light)' : 'transparent',
+                                            color: (
+                                                (item.label === 'Dashboard' && viewMode === 'subject' && !currentSubject) ||
+                                                (item.label === 'Learning Curve' && viewMode === 'learningCurve') ||
+                                                (item.label === 'Study Sessions' && viewMode === 'study-sessions')
+                                            ) ? 'var(--google-blue)' : 'var(--text-primary)',
                                             fontWeight: 600,
                                             cursor: 'pointer',
                                             textAlign: 'left',
@@ -787,6 +795,7 @@ function App() {
                         setViewMode('study-sessions');
                         setSelectedSubject(null);
                     }}
+                    viewMode={viewMode}
                 />
 
                 <Navbar
