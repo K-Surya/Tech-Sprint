@@ -5,8 +5,8 @@ import generateRoadmap from './gemini-roadmap.js';
 async function test() {
     console.log("--- Roadmap Test Start ---");
     console.log("Environment Variables:");
-    console.log("GEMINI_API_KEY_STUDY_PLAN:", process.env.GEMINI_API_KEY_STUDY_PLAN ? "EXISTS" : "MISSING");
-    console.log("GEMINI_API_KEY_ROADMAP:", process.env.GEMINI_API_KEY_ROADMAP ? "EXISTS" : "MISSING");
+    console.log("GEMINI_API_KEY_STUDY_PLAN:", process.env.GEMINI_API_KEY ? "EXISTS" : "MISSING");
+    console.log("GEMINI_API_KEY_ROADMAP:", process.env.GEMINI_API_KEY ? "EXISTS" : "MISSING");
 
     try {
         console.log("Calling generateRoadmap...");

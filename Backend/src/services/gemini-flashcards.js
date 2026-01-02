@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function generateFlashcards(text) {
-  const apiKey = process.env.GEMINI_API_KEY_FLASHCARDS;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not found in environment");

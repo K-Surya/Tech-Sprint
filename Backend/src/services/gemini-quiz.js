@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_QUIZ);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function generateQuiz(subject, summary) {
   const model = genAI.getGenerativeModel({

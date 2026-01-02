@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createStudyPlan } from "./studyPlan.service.js";
 
-const apiKey = process.env.GEMINI_API_KEY_STUDY_PLAN;
+const apiKey = process.env.GEMINI_API_KEY;
 
 const genAI = new GoogleGenerativeAI(apiKey);
 

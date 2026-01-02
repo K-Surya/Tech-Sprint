@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const apiKey = process.env.GEMINI_API_KEY_STUDY_PLAN || process.env.GEMINI_API_KEY_ROADMAP || process.env.GEMINI_API_KEY_NOTES;
+const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
 console.log("--- Roadmap Service Info ---");
-console.log("Using API Key (type):", process.env.GEMINI_API_KEY_STUDY_PLAN ? "STUDY_PLAN (High Tier)" : "Fallback");
+console.log("Using API Key (type):", process.env.GEMINI_API_KEY ? "STUDY_PLAN (High Tier)" : "Fallback");
 console.log("API Key configured:", !!apiKey);
 
 const genAI = new GoogleGenerativeAI(apiKey);
