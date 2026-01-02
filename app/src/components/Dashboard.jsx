@@ -980,11 +980,12 @@ const SubjectDetailView = ({
 
 const SettingsView = ({ onBack, user, glassIntensity, setGlassIntensity }) => {
     const [settings, setSettings] = useState({
-        aiModel: 'gemini-1.5-flash',
-        quality: 'high',
-        autoQuiz: true,
-        animations: true,
-        language: 'English'
+        transcriptionQuality: 'high',
+        autoSaveNotes: true,
+        enableNotifications: true,
+        autoGenerateFlashcards: false,
+        darkModeAuto: false,
+        dataSyncFrequency: 'realtime'
     });
 
     const SettingRow = ({ icon: Icon, label, description, children }) => (
@@ -1013,64 +1014,134 @@ const SettingsView = ({ onBack, user, glassIntensity, setGlassIntensity }) => {
                 <button onClick={onBack} className="btn-modern btn-glass" style={{ padding: '0.5rem', borderRadius: '12px' }}>
                     <ArrowLeft size={20} />
                 </button>
-                <h2 className="google-font" style={{ fontSize: '2rem', margin: 0 }}>Global Settings</h2>
+                <h2 className="google-font" style={{ fontSize: '2rem', margin: 0 }}>Preferences</h2>
             </div>
 
             <section style={{ marginBottom: '3rem' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--google-blue)' }}>AI & Intelligence</h3>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--google-blue)' }}>Lecture Recording</h3>
+
                 <SettingRow
-                    icon={Cpu}
-                    label="AI Model"
-                    description="Choose the engine powering your lecture analysis"
+                    icon={Mic}
+                    label="Transcription Quality"
+                    description="Higher quality uses more processing power but gives better results"
                 >
                     <select
-                        value={settings.aiModel}
-                        onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
+                        value={settings.transcriptionQuality}
+                        onChange={(e) => setSettings({ ...settings, transcriptionQuality: e.target.value })}
                         style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                     >
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Brainy)</option>
+                        <option value="standard">Standard (Faster)</option>
+                        <option value="high">High (Recommended)</option>
+                        <option value="ultra">Ultra (Slowest)</option>
                     </select>
                 </SettingRow>
 
                 <SettingRow
-                    icon={Sparkles}
-                    label="Auto-generate Quiz"
-                    description="Automatically create quizzes after every lecture"
+                    icon={CheckCircle2}
+                    label="Auto-Save Notes"
+                    description="Automatically save generated notes to your library"
                 >
                     <input
                         type="checkbox"
-                        checked={settings.autoQuiz}
-                        onChange={() => setSettings({ ...settings, autoQuiz: !settings.autoQuiz })}
+                        checked={settings.autoSaveNotes}
+                        onChange={() => setSettings({ ...settings, autoSaveNotes: !settings.autoSaveNotes })}
                         style={{ width: '20px', height: '20px', accentColor: 'var(--google-blue)' }}
                     />
                 </SettingRow>
             </section>
 
-            <SettingRow
-                icon={Volume2}
-                label="Glassmorphism Intensity"
-                description="Adjust the blur effect of the user interface"
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <section style={{ marginBottom: '3rem' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--google-green)' }}>Study Features</h3>
+
+                <SettingRow
+                    icon={BrainCircuit}
+                    label="Auto-Generate Flashcards"
+                    description="Automatically create flashcards after each lecture"
+                >
                     <input
-                        type="range"
-                        min="0" max="40"
-                        value={glassIntensity}
-                        onChange={(e) => setGlassIntensity(parseInt(e.target.value))}
-                        style={{ accentColor: 'var(--google-blue)', width: '150px' }}
+                        type="checkbox"
+                        checked={settings.autoGenerateFlashcards}
+                        onChange={() => setSettings({ ...settings, autoGenerateFlashcards: !settings.autoGenerateFlashcards })}
+                        style={{ width: '20px', height: '20px', accentColor: 'var(--google-green)' }}
                     />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, width: '40px', textAlign: 'right' }}>{glassIntensity}px</span>
-                </div>
-            </SettingRow>
+                </SettingRow>
+
+                <SettingRow
+                    icon={FileText}
+                    label="Data Sync"
+                    description="How often to sync your notes across devices"
+                >
+                    <select
+                        value={settings.dataSyncFrequency}
+                        onChange={(e) => setSettings({ ...settings, dataSyncFrequency: e.target.value })}
+                        style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    >
+                        <option value="realtime">Real-time</option>
+                        <option value="daily">Daily</option>
+                        <option value="manual">Manual Only</option>
+                    </select>
+                </SettingRow>
+            </section>
+
+            <section style={{ marginBottom: '3rem' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--google-yellow)' }}>Appearance</h3>
+
+                <SettingRow
+                    icon={Volume2}
+                    label="Glassmorphism Intensity"
+                    description="Adjust the blur effect of the user interface"
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <input
+                            type="range"
+                            min="0" max="40"
+                            value={glassIntensity}
+                            onChange={(e) => setGlassIntensity(parseInt(e.target.value))}
+                            style={{ accentColor: 'var(--google-blue)', width: '150px' }}
+                        />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, width: '40px', textAlign: 'right' }}>{glassIntensity}px</span>
+                    </div>
+                </SettingRow>
+
+                <SettingRow
+                    icon={Moon}
+                    label="Auto Dark Mode"
+                    description="Automatically switch to dark mode at sunset"
+                >
+                    <input
+                        type="checkbox"
+                        checked={settings.darkModeAuto}
+                        onChange={() => setSettings({ ...settings, darkModeAuto: !settings.darkModeAuto })}
+                        style={{ width: '20px', height: '20px', accentColor: 'var(--google-blue)' }}
+                    />
+                </SettingRow>
+            </section>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                <button className="btn-modern btn-glass" style={{ padding: '0.8rem 2rem' }}>Reset Defaults</button>
+                <button
+                    className="btn-modern btn-glass"
+                    style={{ padding: '0.8rem 2rem' }}
+                    onClick={() => {
+                        setSettings({
+                            transcriptionQuality: 'high',
+                            autoSaveNotes: true,
+                            enableNotifications: true,
+                            autoGenerateFlashcards: false,
+                            darkModeAuto: false,
+                            dataSyncFrequency: 'realtime'
+                        });
+                        setGlassIntensity(12);
+                    }}
+                >
+                    Reset to Defaults
+                </button>
                 <button
                     className="btn-modern btn-solid"
                     style={{ padding: '0.8rem 2rem' }}
                     onClick={() => {
                         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                        // Here you would save settings to localStorage or database
+                        localStorage.setItem('userSettings', JSON.stringify(settings));
                         onBack();
                     }}
                 >
@@ -1954,6 +2025,7 @@ const Dashboard = ({
                             generateAndSaveQuiz={generateAndSaveQuiz}
                             userId={user.uid}
                             subjectId={selectedSubject.id}
+                            removeLecture={removeLecture}
                         />
                     ) : viewMode === 'learningCurve' ? (
                         <LearningCurveView
