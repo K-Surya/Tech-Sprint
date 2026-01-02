@@ -149,6 +149,7 @@ export const Plasma = ({
         }
 
         const setSize = () => {
+            if (!containerRef.current) return;
             const rect = containerRef.current.getBoundingClientRect();
             const width = Math.max(1, Math.floor(rect.width));
             const height = Math.max(1, Math.floor(rect.height));

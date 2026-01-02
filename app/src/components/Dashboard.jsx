@@ -1385,14 +1385,20 @@ const Dashboard = ({
                 const savedAuthStatus = await getCalendarAuthStatus(user.uid);
                 let currentAuthStatus = isCalendarAuthorized();
 
+                // Only attempt silent refresh if user had previously authorized
+                // Note: This will likely fail due to popup blockers, but worth trying
                 if (savedAuthStatus && !currentAuthStatus) {
-                    console.log('ℹ️ User previously authorized calendar, attempting silent refresh...');
-                    const refreshed = await refreshCalendarToken(user.email);
-                    if (refreshed) {
-                        currentAuthStatus = true;
-                        console.log('✨ Session restored silently!');
-                    } else {
-                        console.log('❌ Silent refresh failed');
+                    console.log('ℹ️ User previously authorized calendar, checking if session is still valid...');
+                    try {
+                        const refreshed = await refreshCalendarToken(user.email);
+                        if (refreshed) {
+                            currentAuthStatus = true;
+                            console.log('✨ Session restored silently!');
+                        } else {
+                            console.log('ℹ️ Silent refresh not available - user will need to re-authorize when using calendar features');
+                        }
+                    } catch (error) {
+                        console.log('ℹ️ Silent refresh skipped (popup blockers active)');
                     }
                 }
 

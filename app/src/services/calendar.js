@@ -122,7 +122,7 @@ export const requestCalendarAccess = async (emailHint = null) => {
     });
 };
 
-// Silent refresh of token
+// Silent refresh of token (note: may still be blocked by browser)
 export const refreshCalendarToken = async (emailHint = null) => {
     await initializeGoogleCalendar();
 
@@ -136,7 +136,8 @@ export const refreshCalendarToken = async (emailHint = null) => {
 
         tokenClient.callback = (resp) => {
             if (resp.error !== undefined) {
-                console.warn('⚠️ Silent refresh failed:', resp.error);
+                // Silently fail - this is expected with popup blockers
+                console.log('ℹ️ Silent refresh not possible (popup blocked or no stored credentials)');
                 resolve(false);
                 return;
             }
@@ -144,11 +145,17 @@ export const refreshCalendarToken = async (emailHint = null) => {
             resolve(true);
         };
 
-        console.log('🔐 Attempting silent token refresh...', emailHint ? `(Hint: ${emailHint})` : '');
-        tokenClient.requestAccessToken({
-            prompt: '',
-            hint: emailHint
-        });
+        try {
+            console.log('🔐 Attempting silent token refresh...', emailHint ? `(Hint: ${emailHint})` : '');
+            tokenClient.requestAccessToken({
+                prompt: '',
+                hint: emailHint
+            });
+        } catch (error) {
+            // Catch any sync errors from popup blockers
+            console.log('ℹ️ Silent refresh failed (expected in development)');
+            resolve(false);
+        }
     });
 };
 
