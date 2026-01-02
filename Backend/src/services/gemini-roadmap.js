@@ -12,7 +12,7 @@ async function generateRoadmap(subject, examDate, topics = []) {
     console.log(`Generating roadmap for ${subject} with ${topics.length} lectures...`);
     try {
         const model = genAI.getGenerativeModel({
-            model: "gemma-7b",
+            model: "gemini-2.5-flash",
             generationConfig: {
                 responseMimeType: "application/json",
             }
