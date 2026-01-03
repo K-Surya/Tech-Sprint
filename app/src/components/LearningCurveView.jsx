@@ -102,31 +102,6 @@ const LearningCurveView = ({ onBack, userId, subjects }) => {
       const { fetchLearningCurveData } = await import('../services/api');
       const { getLecturesForSubject } = await import('../services/db');
 
-<<<<<<< HEAD
-      // Fetch lectures for each subject and transform data to match backend format
-      const subjectsData = await Promise.all(subjects.map(async (subject) => {
-        const lectures = await getLecturesForSubject(userId, subject.id);
-
-        // Transform lectures to match backend expected format
-        // Backend expects: lectures[].attempts[].{score, total, timestamp}
-        // DB stores: lectures[].scores[].{score, timestamp}
-        const transformedLectures = lectures.map(lecture => ({
-          id: lecture.id,
-          title: lecture.title,
-          attempts: (lecture.scores || []).map(s => ({
-            score: s.score,
-            total: 10, // Quiz has 10 questions
-            timestamp: new Date(s.timestamp).getTime()
-          }))
-        }));
-
-        return {
-          subjectId: subject.id,
-          subjectName: subject.name,
-          lectures: transformedLectures
-        };
-      }));
-=======
       console.log(`🚀 Analytics: Starting fetch for ${subjects.length} subjects for user ${userId}`);
 
       // Fetch ALL lectures for ALL subjects to ensure we have all quiz data
@@ -172,7 +147,6 @@ const LearningCurveView = ({ onBack, userId, subjects }) => {
       console.log("📡 Sending data to backend for KMS calculation...");
       const data = await fetchLearningCurveData(userId, subjectsWithLectures);
       console.log("✅ Received KMS data from backend:", data);
->>>>>>> c16ad01cf970d79af17b8f66683a47df7216318d
 
       setChartData(data);
     } catch (err) {
@@ -269,25 +243,6 @@ const LearningCurveView = ({ onBack, userId, subjects }) => {
           <p style={{ color: 'var(--text-secondary, #a0aec0)', margin: 0 }}>
             Track your understanding level across all subjects
           </p>
-        </div>
-
-        <div style={{ marginLeft: 'auto' }}>
-          <button
-            onClick={() => {
-              const debugInfo = chartData.map(d => ({
-                subject: d.subjectName,
-                percentage: d.percentage,
-                lectures: d.metrics?.totalLectures || 'N/A',
-                quizzes: d.metrics?.quizCount || 'N/A'
-              }));
-              console.table(debugInfo);
-              alert("Debug info logged to console (Press F12). Subjects found: " + chartData.length);
-            }}
-            className="btn-modern btn-glass"
-            style={{ fontSize: '0.7rem', opacity: 0.6 }}
-          >
-            Debug Data
-          </button>
         </div>
       </div>
 
