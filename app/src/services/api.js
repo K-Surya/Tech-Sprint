@@ -2,7 +2,6 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 const BASE_URL = isLocal ? "http://localhost:5000/benchmate" : "https://tech-sprint-qn15.onrender.com/benchmate";
 console.log("API Configured with BASE_URL:", BASE_URL);
 
-
 export const generateNotes = async (transcript, subject) => {
     try {
         const response = await fetch(`${BASE_URL}/notes`, {

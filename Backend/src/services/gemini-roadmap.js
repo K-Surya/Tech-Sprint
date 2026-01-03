@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY;
 
 console.log("--- Roadmap Service Info ---");
 console.log("Using API Key (type):", process.env.GEMINI_API_KEY ? "STUDY_PLAN (High Tier)" : "Fallback");
@@ -9,7 +9,30 @@ console.log("API Key configured:", !!apiKey);
 const genAI = new GoogleGenerativeAI(apiKey);
 
 async function generateRoadmap(subject, examDate, topics = []) {
-    console.log(`Generating roadmap for ${subject} with ${topics.length} lectures...`);
+    let daysRemaining = 7; // Default
+    let durationText = "7 days";
+
+    if (examDate && examDate !== "Not specified") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const exam = new Date(examDate);
+        exam.setHours(0, 0, 0, 0);
+
+        const diffTime = exam - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 0) {
+            daysRemaining = diffDays;
+            durationText = `${daysRemaining} days`;
+        } else if (diffDays === 0) {
+            daysRemaining = 1;
+            durationText = "1 day (Final Revision)";
+        }
+    }
+
+    console.log(`Generating ${durationText} roadmap for ${subject} (Exam: ${examDate || 'None'})`);
+
     try {
         const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",
@@ -24,27 +47,30 @@ async function generateRoadmap(subject, examDate, topics = []) {
 
     Subject: ${subject}
     Exam Date: ${examDate || "Not specified"}
+    Time Remaining: ${durationText}
     
     Lecture Content/Topics:
     ${topics.length > 0 ? topics.join("\n") : "General subject overview (no specific lectures provided)"}
 
     STRICT RULES:
     1. Return ONLY valid JSON.
-    2. Create a 7-day master plan organized into logical "Phases".
-    3. Each phase must have:
+    2. Create a ${durationText} master plan organized into logical "Phases".
+    3. If the duration is long (e.g. > 14 days), group days into weeks (e.g. "Week 1", "Week 2"). If short (< 14 days), groups days (e.g "Day 1-2").
+    4. Each phase must have:
        - phaseName (string)
-       - duration (string, e.g., "Day 1-2")
+       - duration (string)
        - focus (string)
        - tasks (array of strings)
-    4. Ensure the tasks are directly derived from the topics provided in the lecture content.
-    5. The roadmap should move from core concepts to application and final revision.
+    5. Ensure the tasks are directly derived from the topics provided in the lecture content.
+    6. The roadmap should move from core concepts to application and final revision.
+    7. Plan specifically for the available time of ${durationText}.
 
     The final output must be a single JSON object in this exact shape:
     {
       "roadmap": [
         {
           "phaseName": "Foundation Phase",
-          "duration": "Day 1-2",
+          "duration": "Day 1${daysRemaining > 1 ? '-2' : ''}",
           "focus": "Core concepts and terminology",
           "tasks": ["Task specific to lecture 1", "Task specific to lecture 2"]
         },
