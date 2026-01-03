@@ -497,9 +497,9 @@ const Features = () => {
 
 const HowItWorks = () => {
     const steps = [
-        { icon: <Mic />, title: "Record", text: "Start live recording." },
-        { icon: <Cpu />, title: "AI return notes", text: "google ai generated concise notes" },
-        { icon: <CheckCircle2 />, title: "Study-Ready Text", text: "Get structured, clean notes instantly." }
+        { icon: <Mic />, title: "Record or Paste Content", text: "Start live recording or paste study material." },
+        { icon: <Cpu />, title: "AI Transforms Lecture", text: "Transforms lecture into structured notes." },
+        { icon: <CheckCircle2 />, title: "Get Exam Ready", text: "Generate quizzes, flashcards & roadmaps." }
     ];
 
     const containerVariants = {
