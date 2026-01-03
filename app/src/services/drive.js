@@ -1,5 +1,4 @@
-
-const CLIENT_ID = '962088146382-7sakavrun6ir2sb8dd48tkqkjbigp569.apps.googleusercontent.com';
+const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 let tokenClient;

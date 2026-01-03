@@ -1,5 +1,5 @@
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const BASE_URL = isLocal ? "http://localhost:5000/benchmate" : "https://tech-sprint-qn15.onrender.com/benchmate";
+const BASE_URL = isLocal ? "http://localhost:5000/benchmate" : import.meta.env.VITE_BASE_URL;
 console.log("API Configured with BASE_URL:", BASE_URL);
 
 export const generateNotes = async (transcript, subject) => {
