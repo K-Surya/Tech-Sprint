@@ -35,7 +35,7 @@ async function generateRoadmap(subject, examDate, topics = []) {
 
     try {
         const model = genAI.getGenerativeModel({
-            model: "gemini-3-flash",
+            model: "gemini-2.5-flash-lite",
             generationConfig: {
                 responseMimeType: "application/json",
             }
