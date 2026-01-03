@@ -631,10 +631,12 @@
 
 .step:nth-child(odd) .step-content::before {
     right: 100%;
+    left: auto;
 }
 
-.step:even .step-content::before {
+.step:nth-child(even) .step-content::before {
     left: 100%;
+    right: auto;
 }
 
 .how-it-works-bg-glow {
