@@ -224,7 +224,7 @@ const QuizView = ({ userId, subjectId, lectureId, quiz: rawQuiz, onBack, onGener
 
         try {
             const { saveQuizScore } = await import('../services/db');
-            await saveQuizScore(userId, subjectId, lectureId, finalScore);
+            await saveQuizScore(userId, subjectId, lectureId, finalScore, quiz.length);
         } catch (e) {
             console.error("Failed to save score:", e);
         }
@@ -1675,13 +1675,11 @@ const Dashboard = ({
         if (exams.length > 0 && calendarAuthorized) {
             const cleanupPastExams = async () => {
                 const { cleanupPastEvents } = await import('../services/calendar');
-                const { deleteExam } = await import('../services/db');
 
-                const pastExamIds = await cleanupPastEvents(exams);
-                // Delete past exams from database
-                for (const examId of pastExamIds) {
-                    await deleteExam(user.uid, examId);
-                }
+                // We keep the exams in the database for the timetable, 
+                // but we clean up the calendar events to avoid clutter.
+                await cleanupPastEvents(exams);
+                console.log('🧹 Cleaned up past exam events from Google Calendar');
             };
             cleanupPastExams();
         }
@@ -1692,15 +1690,16 @@ const Dashboard = ({
         if (exams.length > 0 && calendarAuthorized && user) {
             const verifySyncs = async () => {
                 const { verifyAllExamSyncs } = await import('../services/calendar');
-                const { deleteExam } = await import('../services/db');
+                const { clearExamCalendarId } = await import('../services/db');
 
-                // Callback to delete exam if event was deleted externally
-                const deleteCallback = async (examId) => {
-                    await deleteExam(user.uid, examId);
-                    console.log('🗑️ Deleted exam from timetable (removed from Google Calendar externally)');
+                // Callback if event was deleted externally: just clear the calendar ID
+                // but KEEP the exam in the timetable.
+                const disconnectCallback = async (examId) => {
+                    await clearExamCalendarId(user.uid, examId);
+                    console.log('🔗 Disconnected exam from calendar (removed externally)');
                 };
 
-                await verifyAllExamSyncs(exams, user.uid, deleteCallback);
+                await verifyAllExamSyncs(exams, user.uid, disconnectCallback);
             };
 
             // Run verification every 30 seconds

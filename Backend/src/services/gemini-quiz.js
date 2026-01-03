@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function generateQuiz(subject, summary) {
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-1.5-flash",
     generationConfig: {
       responseMimeType: "application/json",
     }
@@ -51,15 +51,19 @@ async function generateQuiz(subject, summary) {
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
-    // Clean potential markdown or extra text (though responseMimeType should handle it)
-    const cleanJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsedData = JSON.parse(cleanJson);
-
-    // Return only the quiz array to the caller
-    return parsedData.quiz || parsedData;
+    try {
+      // Clean potential markdown or extra text
+      const cleanJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsedData = JSON.parse(cleanJson);
+      return parsedData.quiz || parsedData;
+    } catch (parseError) {
+      console.error("❌ Failed to parse Gemini response as JSON:");
+      console.error("Response:", responseText);
+      throw new Error("Failed to parse quiz data. Please try again.");
+    }
   } catch (error) {
     console.error("Error in generateQuiz service:", error);
-    throw new Error("Failed to generate or parse quiz JSON");
+    throw error;
   }
 }
 
