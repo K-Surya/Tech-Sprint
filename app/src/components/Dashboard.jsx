@@ -640,23 +640,19 @@ const LectureDetailView = ({
     const [savingToDrive, setSavingToDrive] = useState(false);
 
     const handleSaveToDrive = async () => {
-        let token = localStorage.getItem('googleAccessToken');
+        if (selectedLecture.isSavedToDrive) {
+            alert("This note has already been saved to your Google Drive.");
+            return;
+        }
 
         try {
-            if (!token) {
-                const result = await signInWithPopup(auth, googleProvider);
-                const credential = FirebaseGoogleAuthProvider.credentialFromResult(result);
-                token = credential?.accessToken;
-                console.log(token);
-
-                if (token) {
-                    localStorage.setItem('googleAccessToken', token);
-                } else {
-                    throw new Error("Failed to obtain Google Access Token. Please sign in with Google.");
-                }
-            }
-
             setSavingToDrive(true);
+
+            // Get Token via GIS (same way as Calendar)
+            const { getDriveAccessToken } = await import('../services/drive');
+            const token = await getDriveAccessToken();
+
+            // Create PDF
 
             // Create PDF
             const doc = new jsPDF();
@@ -683,8 +679,20 @@ const LectureDetailView = ({
 
             doc.setFontSize(11);
             doc.setTextColor(50, 50, 50);
-            const content = selectedLecture.transcript || 'No transcript available.';
-            const splitText = doc.splitTextToSize(content, maxWidth);
+
+            // Strip Markdown for clean PDF output
+            const rawContent = selectedLecture.transcript || 'No transcript available.';
+            const cleanContent = rawContent
+                .replace(/^#+\s+/gm, '') // Remove headers
+                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                .replace(/`{3}[\s\S]*?`{3}/g, '') // Remove code blocks
+                .replace(/`/g, '') // Remove inline code
+                .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links
+                .replace(/^\s*[\*\-]\s+/gm, '• ') // Replace bullets
+                .replace(/\n{3,}/g, '\n\n'); // Normalize newlines
+
+            const splitText = doc.splitTextToSize(cleanContent, maxWidth);
 
             let y = 55;
             const lineHeight = 7;
@@ -699,13 +707,21 @@ const LectureDetailView = ({
 
             const pdfBlob = doc.output('blob');
             const dateStr = new Date().toISOString().split('T')[0];
-            const fileName = `${(subjectName || 'Subject').replace(/\s+/g, '_')}_${dateStr}_Notes.pdf`;
+            const safeSubject = (subjectName || 'Subject').replace(/[^a-zA-Z0-9]/g, '_');
+            const fileName = `${safeSubject}_${dateStr}_Notes.pdf`;
 
             // Call Backend API instead of Google directly to avoid CORS
             const { uploadNotesToDrive } = await import('../services/api');
             const result = await uploadNotesToDrive(pdfBlob, token, fileName);
 
             if (result.success) {
+                // Update DB to mark as saved
+                const { updateLecture } = await import('../services/db');
+                await updateLecture(userId, subjectId, selectedLecture.id, { isSavedToDrive: true });
+
+                // Update local state
+                setSelectedLecture(prev => ({ ...prev, isSavedToDrive: true }));
+
                 alert('Notes saved to your Google Drive successfully via proxy!');
             } else {
                 throw new Error("Failed to upload via proxy.");
@@ -713,16 +729,20 @@ const LectureDetailView = ({
         } catch (error) {
             console.error('[Drive Save Exception]:', error);
 
-            const isAuthError = error.message.includes("401") ||
-                error.message.includes("403") ||
-                error.message.includes("Authentication expired") ||
-                error.message.includes("insufficient authentication scopes");
-
-            if (isAuthError) {
-                localStorage.removeItem('googleAccessToken');
-                alert("Authorization error: Your session might be missing required permissions. Please click 'Save to Drive' again to re-authorize with the correct permissions.");
+            if (error.message.includes("Failed to fetch")) {
+                alert("Connection Error: Could not reach the backend server. Please ensure the backend is running on port 5000.");
             } else {
-                alert(`Error: ${error.message}`);
+                const isAuthError = error.message.includes("401") ||
+                    error.message.includes("403") ||
+                    error.message.includes("Authentication expired") ||
+                    error.message.includes("insufficient authentication scopes");
+
+                if (isAuthError) {
+                    localStorage.removeItem('googleAccessToken');
+                    alert("Authorization error: Please try again to refresh permissions.");
+                } else {
+                    alert(`Error: ${error.message}`);
+                }
             }
         } finally {
             setSavingToDrive(false);
@@ -839,6 +859,8 @@ const LectureDetailView = ({
                     >
                         {savingToDrive ? (
                             <><Loader2 size={20} className="spinner" /> Saving to Drive...</>
+                        ) : selectedLecture.isSavedToDrive ? (
+                            <><CheckCircle2 size={20} /> Saved to Drive</>
                         ) : (
                             <><Download size={20} /> Save Notes to Google Drive</>
                         )}
@@ -2092,6 +2114,7 @@ const Dashboard = ({
                             generateAndSaveQuiz={generateAndSaveQuiz}
                             userId={user.uid}
                             subjectId={selectedSubject.id}
+                            subjectName={selectedSubject.name}
                         />
                     ) : viewMode === 'learningCurve' ? (
                         <LearningCurveView

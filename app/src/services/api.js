@@ -1,4 +1,6 @@
-const BASE_URL = window.location.hostname === 'localhost' ? "http://localhost:5000/benchmate" : "https://tech-sprint-qn15.onrender.com/benchmate";
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const BASE_URL = isLocal ? "http://localhost:5000/benchmate" : "https://tech-sprint-qn15.onrender.com/benchmate";
+console.log("API Configured with BASE_URL:", BASE_URL);
 
 
 export const generateNotes = async (transcript, subject) => {
@@ -193,7 +195,9 @@ export const uploadNotesToDrive = async (pdfBlob, accessToken, fileName) => {
         formData.append("fileName", fileName);
         formData.append("file", pdfBlob, fileName);
 
-        const response = await fetch(`${BASE_URL}/upload-to-drive`, {
+        const url = `${BASE_URL}/upload-to-drive`;
+        console.log(`[API] Uploading to: ${url}`);
+        const response = await fetch(url, {
             method: "POST",
             body: formData,
         });
