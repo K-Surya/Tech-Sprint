@@ -32,6 +32,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { jsPDF } from 'jspdf';
+import { auth, googleProvider, db } from '../firebase';
+import { GoogleAuthProvider as FirebaseGoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 // Helper functions defined at module scope
 const parseLocalDate = (dateStr) => {
@@ -629,11 +632,124 @@ const LectureDetailView = ({
     generateAndSaveQuiz,
     userId,
     subjectId,
+    subjectName,
     removeLecture
 }) => {
     const [activeTab, setActiveTab] = useState('notes'); // 'notes', 'flashcards', 'quiz'
     const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
     const [generatingQuiz, setGeneratingQuiz] = useState(false);
+    const [savingToDrive, setSavingToDrive] = useState(false);
+
+    const handleSaveToDrive = async () => {
+        if (selectedLecture.isSavedToDrive) {
+            alert("This note has already been saved to your Google Drive.");
+            return;
+        }
+
+        try {
+            setSavingToDrive(true);
+
+            // Get Token via GIS (same way as Calendar)
+            const { getDriveAccessToken } = await import('../services/drive');
+            const token = await getDriveAccessToken();
+
+            // Create PDF
+
+            // Create PDF
+            const doc = new jsPDF();
+            const margin = 20;
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const maxWidth = pageWidth - (margin * 2);
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(33, 37, 41);
+            doc.text(subjectName || 'Subject Notes', margin, 25);
+
+            doc.setFontSize(16);
+            doc.text(selectedLecture.title, margin, 35);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, 42);
+
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, 46, pageWidth - margin, 46);
+
+            doc.setFontSize(11);
+            doc.setTextColor(50, 50, 50);
+
+            // Strip Markdown for clean PDF output
+            const rawContent = selectedLecture.transcript || 'No transcript available.';
+            const cleanContent = rawContent
+                .replace(/^#+\s+/gm, '') // Remove headers
+                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                .replace(/`{3}[\s\S]*?`{3}/g, '') // Remove code blocks
+                .replace(/`/g, '') // Remove inline code
+                .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links
+                .replace(/^\s*[\*\-]\s+/gm, '• ') // Replace bullets
+                .replace(/\n{3,}/g, '\n\n'); // Normalize newlines
+
+            const splitText = doc.splitTextToSize(cleanContent, maxWidth);
+
+            let y = 55;
+            const lineHeight = 7;
+            for (let i = 0; i < splitText.length; i++) {
+                if (y > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin;
+                }
+                doc.text(splitText[i], margin, y);
+                y += lineHeight;
+            }
+
+            const pdfBlob = doc.output('blob');
+            const dateStr = new Date().toISOString().split('T')[0];
+            const safeSubject = (subjectName || 'Subject').replace(/[^a-zA-Z0-9]/g, '_');
+            const fileName = `${safeSubject}_${dateStr}_Notes.pdf`;
+
+            // Call Backend API instead of Google directly to avoid CORS
+            const { uploadNotesToDrive } = await import('../services/api');
+            const result = await uploadNotesToDrive(pdfBlob, token, fileName);
+
+            if (result.success) {
+                // Update DB to mark as saved
+                const { updateLecture } = await import('../services/db');
+                await updateLecture(userId, subjectId, selectedLecture.id, { isSavedToDrive: true });
+
+                // Update local state
+                setSelectedLecture(prev => ({ ...prev, isSavedToDrive: true }));
+
+                alert('Notes saved to your Google Drive successfully via proxy!');
+            } else {
+                throw new Error("Failed to upload via proxy.");
+            }
+        } catch (error) {
+            console.error('[Drive Save Exception]:', error);
+
+            if (error.message.includes("Failed to fetch")) {
+                alert("Connection Error: Could not reach the backend server. Please ensure the backend is running on port 5000.");
+            } else {
+                const isAuthError = error.message.includes("401") ||
+                    error.message.includes("403") ||
+                    error.message.includes("Authentication expired") ||
+                    error.message.includes("insufficient authentication scopes");
+
+                if (isAuthError) {
+                    localStorage.removeItem('googleAccessToken');
+                    alert("Authorization error: Please try again to refresh permissions.");
+                } else {
+                    alert(`Error: ${error.message}`);
+                }
+            }
+        } finally {
+            setSavingToDrive(false);
+        }
+    };
+
 
     const tabs = [
         { id: 'notes', label: 'Lecture Notes', icon: FileText, visible: true },
@@ -717,6 +833,40 @@ const LectureDetailView = ({
                         </button>
                     )}
                 </div>
+            </div>
+
+            {/* Row for Secondary Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
+                {activeTab === 'notes' && (
+                    <button
+                        className="btn-modern btn-glass"
+                        onClick={handleSaveToDrive}
+                        disabled={savingToDrive}
+                        style={{
+                            color: 'var(--google-blue)',
+                            border: '1px solid rgba(66, 133, 244, 0.2)',
+                            padding: '0.8rem 1.5rem',
+                            cursor: savingToDrive ? 'wait' : 'pointer',
+                            opacity: savingToDrive ? 0.7 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.8rem',
+                            background: '#fff',
+                            borderRadius: '16px',
+                            fontWeight: 700,
+                            boxShadow: '0 4px 15px rgba(66, 133, 244, 0.12)',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        {savingToDrive ? (
+                            <><Loader2 size={20} className="spinner" /> Saving to Drive...</>
+                        ) : selectedLecture.isSavedToDrive ? (
+                            <><CheckCircle2 size={20} /> Saved to Drive</>
+                        ) : (
+                            <><Download size={20} /> Save Notes to Google Drive</>
+                        )}
+                    </button>
+                )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', flex: 1, minHeight: 0 }}>
@@ -1422,6 +1572,13 @@ const Dashboard = ({
     const fileInputRef = useRef(null);
     const timetableRef = useRef(null);
 
+    // Reset local navigation when global session changes
+    useEffect(() => {
+        if (!user || !selectedSubject) {
+            setSelectedLecture(null);
+        }
+    }, [user, selectedSubject]);
+
     // Initial User Setup & Data Fetching
     // Initial User Setup & Data Fetching
     // userProfile is passed from App.jsx
@@ -2027,6 +2184,7 @@ const Dashboard = ({
                             userId={user.uid}
                             subjectId={selectedSubject.id}
                             removeLecture={removeLecture}
+                            subjectName={selectedSubject.name}
                         />
                     ) : viewMode === 'learningCurve' ? (
                         <LearningCurveView
@@ -2257,7 +2415,7 @@ const Dashboard = ({
                                 </div>
 
                                 {/* Recent Activity */}
-                                <div style={{ padding: '1rem' }}>
+                                <div className="lab-card" style={{ padding: '1.5rem', background: 'var(--bg-color)', borderRadius: '24px', border: '1px solid var(--border-color)' }}>
                                     <h3 className="google-font" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Recent Activity</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {recentActivities.length === 0 ? (
@@ -2277,15 +2435,14 @@ const Dashboard = ({
                                         )}
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
 
             {/* Subject Modal */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {showSubjectModal && (
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }}>
                         <motion.div
@@ -2319,10 +2476,10 @@ const Dashboard = ({
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence >
 
             {/* Exam Modal */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {showExamModal && (
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }} onClick={() => setShowExamModal(false)}>
                         <motion.div
@@ -2437,8 +2594,8 @@ const Dashboard = ({
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
-        </div>
+            </AnimatePresence >
+        </div >
     );
 };
 

@@ -34,7 +34,12 @@ const Auth = ({ onBack }) => {
         setLoading(true);
         setError('');
         try {
-            await signInWithPopup(auth, googleProvider);
+            const result = await signInWithPopup(auth, googleProvider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential?.accessToken;
+            if (token) {
+                localStorage.setItem('googleAccessToken', token);
+            }
         } catch (err) {
             console.error("Google Sign-In Error Full:", err);
             setError(`Google Sign-In Failed: ${err.message} (${err.code})`);

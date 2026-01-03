@@ -143,6 +143,11 @@ export const deleteLecture = async (userId, subjectId, lectureId) => {
     });
 };
 
+export const updateLecture = async (userId, subjectId, lectureId, data) => {
+    const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
+    await updateDoc(lectureRef, data);
+};
+
 // --- Subcollections (Flashcards & Quizzes) ---
 export const addFlashcards = async (userId, subjectId, lectureId, flashcards) => {
     const flashcardsRef = collection(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId, 'flashcards');
