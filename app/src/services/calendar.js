@@ -317,13 +317,16 @@ export const verifyCalendarEvent = async (eventId) => {
         });
         return response.result !== null;
     } catch (error) {
-        // If event doesn't exist (404) or was deleted (410), return false
+        // Explicitly only return false (not synced/deleted) if we get a 404 or 410
         if (error.status === 404 || error.status === 410) {
-            console.log('ℹ️ Calendar event not found:', eventId);
+            console.log('ℹ️ Calendar event not found or deleted:', eventId);
             return false;
         }
-        console.error('Error verifying calendar event:', error);
-        return false; // Assume not synced if we can't verify
+
+        // For any other error (401, 500, network error), we assume it MIGHT exist 
+        // but we just can't see it right now. Return true to KEEP the ID in our DB.
+        console.warn('⚠️ Could not verify calendar event (network or auth issue):', error);
+        return true;
     }
 };
 

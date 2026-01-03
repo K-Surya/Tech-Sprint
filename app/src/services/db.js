@@ -180,12 +180,20 @@ export const updateLectureQuiz = async (userId, subjectId, lectureId, quizData) 
     });
 };
 
-export const saveQuizScore = async (userId, subjectId, lectureId, score) => {
+export const saveQuizScore = async (userId, subjectId, lectureId, score, total) => {
     const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
     await updateDoc(lectureRef, {
+        // Keeping scores for backward UI compatibility if any
         scores: arrayUnion({
             score: score,
+            total: total,
             timestamp: new Date().toISOString()
+        }),
+        // Adding attempts for backend analytics service
+        attempts: arrayUnion({
+            score: score,
+            total: total,
+            timestamp: Date.now()
         })
     });
 };

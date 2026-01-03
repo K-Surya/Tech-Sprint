@@ -12,22 +12,33 @@ export const analyzePerformance = (lectures) => {
   let lectureTrends = [];
 
   lectures.forEach((lecture) => {
-    if (!lecture.attempts || lecture.attempts.length === 0) return;
+    // Backend expects 'attempts', but legacy frontend used 'scores'
+    const rawAttempts = lecture.attempts || lecture.scores || [];
+    if (rawAttempts.length === 0) return;
 
     attemptedLectures++;
 
     // Sort by timestamp ascending (oldest first) to determine order
-    const sortedAttempts = [...lecture.attempts].sort(
-      (a, b) => a.timestamp - b.timestamp
-    );
+    // Handle both numeric and ISO string timestamps
+    const sortedAttempts = [...rawAttempts].sort((a, b) => {
+      const timeA = typeof a.timestamp === 'string' ? new Date(a.timestamp).getTime() : a.timestamp;
+      const timeB = typeof b.timestamp === 'string' ? new Date(b.timestamp).getTime() : b.timestamp;
+      return timeA - timeB;
+    });
 
     // Take last 3 attempts
     const recentAttempts = sortedAttempts.slice(-3);
 
     // Normalize scores (score / total)
-    const normalizedScores = recentAttempts.map((a) =>
-      a.total > 0 ? a.score / a.total : 0
-    );
+    // Fallback if total is missing (assume total is 10 for legacy quizzes if score <= 10, otherwise assume score is the percentage)
+    const normalizedScores = recentAttempts.map((a) => {
+      if (a.total && a.total > 0) {
+        return a.score / a.total;
+      }
+      // Legacy fallback
+      if (a.score > 1) return a.score / 10; // Assume out of 10
+      return a.score; // Assume it was already normalized or 0/1
+    });
 
     // Compute Lecture Avg Score
     const avg =
