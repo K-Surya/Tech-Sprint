@@ -85,14 +85,7 @@ const Hero = ({ onActionClick }) => (
                         <Mic size={20} style={{ marginRight: '0.5rem' }} />
                         Start Free Recording
                     </button>
-                    <button
-                        onClick={() => onActionClick('upload')}
-                        className="btn-modern btn-glass"
-                        style={{ padding: '0.8rem 2rem', fontSize: '1rem' }}
-                    >
-                        <Upload size={20} style={{ marginRight: '0.5rem' }} />
-                        Upload Audio File
-                    </button>
+
                 </div>
 
                 <div style={{ marginTop: '3rem', display: 'flex', gap: '2rem' }}>
@@ -875,11 +868,11 @@ function App() {
 
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
                 <Plasma
-                    color="#1a10ff"
-                    speed={1.0}
+                    color="#4c8bf5"
+                    speed={0.8}
                     direction="forward"
-                    scale={1.1}
-                    opacity={0.9}
+                    scale={1.5}
+                    opacity={0.15}
                     mouseInteractive={true}
                 />
             </div>
