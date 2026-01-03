@@ -12,24 +12,144 @@ const LearningCurveView = ({ onBack, userId, subjects }) => {
     fetchData();
   }, [userId, subjects]);
 
+  const analyzePerformance = (lectures) => {
+    let totalLectures = lectures.length;
+    let attemptedLectures = 0;
+    let lectureAvgScores = [];
+    let lectureTrends = [];
+
+    const calculateVariance = (values) => {
+      if (values.length === 0) return 0;
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const squareDiffs = values.map((v) => Math.pow(v - mean, 2));
+      return squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+    };
+
+    lectures.forEach((lecture) => {
+      // Backend expects 'attempts', but legacy frontend used 'scores'
+      const rawAttempts = lecture.attempts || lecture.scores || [];
+      if (rawAttempts.length === 0) return;
+
+      attemptedLectures++;
+
+      // Sort by timestamp ascending (oldest first) to determine order
+      const sortedAttempts = [...rawAttempts].sort((a, b) => {
+        const timeA = typeof a.timestamp === 'string' ? new Date(a.timestamp).getTime() : a.timestamp;
+        const timeB = typeof b.timestamp === 'string' ? new Date(b.timestamp).getTime() : b.timestamp;
+        return timeA - timeB;
+      });
+
+      // Take last 3 attempts
+      const recentAttempts = sortedAttempts.slice(-3);
+
+      // Normalize scores (score / total)
+      const normalizedScores = recentAttempts.map((a) => {
+        if (a.total && a.total > 0) {
+          return a.score / a.total;
+        }
+        // Legacy fallback
+        if (a.score > 1) return a.score / 10; // Assume out of 10
+        return a.score; // Assume it was already normalized or 0/1
+      });
+
+      // Compute Lecture Avg Score
+      const avg = normalizedScores.reduce((a, b) => a + b, 0) / normalizedScores.length;
+      lectureAvgScores.push(avg);
+
+      // Compute Lecture Trend (Last - First)
+      const trend = normalizedScores.length > 1
+        ? normalizedScores[normalizedScores.length - 1] - normalizedScores[0]
+        : 0;
+      lectureTrends.push(trend);
+    });
+
+    // Subject Metrics
+    const avgScore = lectureAvgScores.length > 0
+      ? lectureAvgScores.reduce((a, b) => a + b, 0) / lectureAvgScores.length
+      : 0;
+
+    const trend = lectureTrends.length > 0
+      ? lectureTrends.reduce((a, b) => a + b, 0) / lectureTrends.length
+      : 0;
+
+    const variance = calculateVariance(lectureAvgScores);
+    const consistency = 1 / (1 + variance);
+    const coverage = totalLectures > 0 ? attemptedLectures / totalLectures : 0;
+
+    // Knowledge Mastery Score (KMS) - Weighted aggregate
+    const kms =
+      (0.45 * avgScore) +        // High weight on basic score
+      (0.25 * Math.max(trend, 0)) + // Bonus for improvement
+      (0.20 * consistency) +     // Bonus for steady performance
+      (0.10 * coverage);          // Small weight for completing content
+
+    return { kms, metrics: { avgScore, trend, consistency, coverage } };
+  };
+
   const fetchData = async () => {
+    if (!userId || !subjects || subjects.length === 0) {
+      console.log("⏳ Analytics: Waiting for userId and subjects...");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
+      const { db } = await import('../firebase');
+      const { collection, getDocs } = await import('firebase/firestore');
       const { fetchLearningCurveData } = await import('../services/api');
 
-      // Prepare subjects data with lectures
-      const subjectsData = subjects.map(subject => ({
-        subjectId: subject.id || subject.name,
-        subjectName: subject.name,
-        lectures: subject.lectures || []
-      }));
+      console.log(`🚀 Analytics: Starting fetch for ${subjects.length} subjects for user ${userId}`);
 
-      const data = await fetchLearningCurveData(userId, subjectsData);
+      // Fetch ALL lectures for ALL subjects to ensure we have all quiz data
+      const subjectsWithLectures = await Promise.all(
+        subjects.map(async (subject) => {
+          try {
+            if (!subject.id) {
+              console.warn(`⚠️ Subject "${subject.name}" is missing an ID!`, subject);
+              return { subjectId: subject.name, subjectName: subject.name, lectures: [] };
+            }
+
+            const lecturesRef = collection(db, 'users', userId, 'subjects', subject.id, 'lectures');
+            console.log(`📁 Querying: users/${userId}/subjects/${subject.id}/lectures`);
+
+            const querySnapshot = await getDocs(lecturesRef);
+            const lectures = querySnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+
+            console.log(`✅ Subject "${subject.name}" (ID: ${subject.id}): Found ${lectures.length} lectures`);
+
+            // Log if we found any quizes/scores
+            const lecturesWithQuizzes = lectures.filter(l => (l.attempts && l.attempts.length > 0) || (l.scores && l.scores.length > 0));
+            console.log(`   - Lectures with quiz data: ${lecturesWithQuizzes.length}`);
+
+            return {
+              subjectId: subject.id,
+              subjectName: subject.name,
+              lectures: lectures
+            };
+          } catch (e) {
+            console.error(`❌ Error fetching lectures for subject ${subject.name}:`, e);
+            return {
+              subjectId: subject.id,
+              subjectName: subject.name,
+              lectures: []
+            };
+          }
+        })
+      );
+
+      console.log("📡 Sending data to backend for KMS calculation...");
+      const data = await fetchLearningCurveData(userId, subjectsWithLectures);
+      console.log("✅ Received KMS data from backend:", data);
+
       setChartData(data);
     } catch (err) {
-      console.error("Failed to fetch learning curve data:", err);
+      console.error("❌ Failed to fetch learning curve data from backend:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -122,6 +242,25 @@ const LearningCurveView = ({ onBack, userId, subjects }) => {
           <p style={{ color: 'var(--text-secondary, #a0aec0)', margin: 0 }}>
             Track your understanding level across all subjects
           </p>
+        </div>
+
+        <div style={{ marginLeft: 'auto' }}>
+          <button
+            onClick={() => {
+              const debugInfo = chartData.map(d => ({
+                subject: d.subjectName,
+                percentage: d.percentage,
+                lectures: d.metrics?.totalLectures || 'N/A',
+                quizzes: d.metrics?.quizCount || 'N/A'
+              }));
+              console.table(debugInfo);
+              alert("Debug info logged to console (Press F12). Subjects found: " + chartData.length);
+            }}
+            className="btn-modern btn-glass"
+            style={{ fontSize: '0.7rem', opacity: 0.6 }}
+          >
+            Debug Data
+          </button>
         </div>
       </div>
 
