@@ -85,14 +85,6 @@ const Hero = ({ onActionClick }) => (
                         <Mic size={20} style={{ marginRight: '0.5rem' }} />
                         Start Free Recording
                     </button>
-                    <button
-                        onClick={() => onActionClick('upload')}
-                        className="btn-modern btn-glass"
-                        style={{ padding: '0.8rem 2rem', fontSize: '1rem' }}
-                    >
-                        <Upload size={20} style={{ marginRight: '0.5rem' }} />
-                        Upload Audio File
-                    </button>
                 </div>
 
                 <div style={{ marginTop: '3rem', display: 'flex', gap: '2rem' }}>
@@ -505,9 +497,9 @@ const Features = () => {
 
 const HowItWorks = () => {
     const steps = [
-        { icon: <Mic />, title: "Record / Upload", text: "Start live recording or pick a file." },
-        { icon: <Cpu />, title: "AI Filters & Transcribes", text: "Google AI cleans & converts audio." },
-        { icon: <CheckCircle2 />, title: "Study-Ready Text", text: "Get structured, clean notes instantly." }
+        { icon: <Mic />, title: "Record or Paste Content", text: "Start live recording or paste study material." },
+        { icon: <Cpu />, title: "AI Transforms Lecture", text: "Transforms lecture into structured notes." },
+        { icon: <CheckCircle2 />, title: "Get Exam Ready", text: "Generate quizzes, flashcards & roadmaps." }
     ];
 
     const containerVariants = {
@@ -875,11 +867,11 @@ function App() {
 
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
                 <Plasma
-                    color="#1a10ff"
-                    speed={1.0}
+                    color="#4c8bf5"
+                    speed={0.8}
                     direction="forward"
-                    scale={1.1}
-                    opacity={0.9}
+                    scale={1.5}
+                    opacity={0.15}
                     mouseInteractive={true}
                 />
             </div>
@@ -913,8 +905,8 @@ function App() {
                         <div>
                             <h4 style={{ marginBottom: '1.5rem' }}>Contact Us</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <a href="mailto:support@benchmateai.temp" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Sparkles size={16} /> support@benchmateai.temp
+                                <a href="mailto:benchmateai@gmail.com" className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Sparkles size={16} /> benchmateai@gmail.com
                                 </a>
                                 <p style={{ fontSize: '0.85rem' }}>
                                     Available Mon-Fri <br /> 9:00 AM - 6:00 PM

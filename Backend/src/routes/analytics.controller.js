@@ -13,9 +13,17 @@ export const getLearningCurveData = async (req, res) => {
 
     const learningCurveData = [];
 
+    console.log(`📊 Generating learning curve for user: ${userId}`);
+    console.log(`📚 Subjects received: ${subjects.length}`);
+
     // Calculate KMS for each subject
     for (const subject of subjects) {
       const { subjectId, subjectName, lectures } = subject;
+
+      const quizLectures = (lectures || []).filter(l => (l.attempts && l.attempts.length > 0) || (l.scores && l.scores.length > 0));
+      console.log(`   - Subject: ${subjectName} (${subjectId})`);
+      console.log(`     Total Lectures: ${lectures?.length || 0}`);
+      console.log(`     Lectures with Quizzes: ${quizLectures.length}`);
 
       if (!lectures || lectures.length === 0) {
         // No lectures, KMS is 0
