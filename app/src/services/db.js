@@ -132,6 +132,17 @@ export const subscribeToLectures = (userId, subjectId, callback) => {
     });
 };
 
+// One-time fetch of lectures for a subject (used by Learning Curve)
+export const getLecturesForSubject = async (userId, subjectId) => {
+    const lecturesRef = collection(db, 'users', userId, 'subjects', subjectId, 'lectures');
+    const q = query(lecturesRef, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    }));
+};
+
 export const deleteLecture = async (userId, subjectId, lectureId) => {
     const lectureRef = doc(db, 'users', userId, 'subjects', subjectId, 'lectures', lectureId);
     await deleteDoc(lectureRef);

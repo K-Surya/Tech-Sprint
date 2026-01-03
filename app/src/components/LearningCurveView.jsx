@@ -18,12 +18,30 @@ const LearningCurveView = ({ onBack, userId, subjects }) => {
       setError(null);
 
       const { fetchLearningCurveData } = await import('../services/api');
+      const { getLecturesForSubject } = await import('../services/db');
 
-      // Prepare subjects data with lectures
-      const subjectsData = subjects.map(subject => ({
-        subjectId: subject.id || subject.name,
-        subjectName: subject.name,
-        lectures: subject.lectures || []
+      // Fetch lectures for each subject and transform data to match backend format
+      const subjectsData = await Promise.all(subjects.map(async (subject) => {
+        const lectures = await getLecturesForSubject(userId, subject.id);
+
+        // Transform lectures to match backend expected format
+        // Backend expects: lectures[].attempts[].{score, total, timestamp}
+        // DB stores: lectures[].scores[].{score, timestamp}
+        const transformedLectures = lectures.map(lecture => ({
+          id: lecture.id,
+          title: lecture.title,
+          attempts: (lecture.scores || []).map(s => ({
+            score: s.score,
+            total: 10, // Quiz has 10 questions
+            timestamp: new Date(s.timestamp).getTime()
+          }))
+        }));
+
+        return {
+          subjectId: subject.id,
+          subjectName: subject.name,
+          lectures: transformedLectures
+        };
       }));
 
       const data = await fetchLearningCurveData(userId, subjectsData);
