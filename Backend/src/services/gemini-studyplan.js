@@ -7,7 +7,7 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 async function generateStudyPlan(kms, metrics, weaknessLevel, daysRemaining) {
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash",
     generationConfig: {
       responseMimeType: "application/json",
     },
