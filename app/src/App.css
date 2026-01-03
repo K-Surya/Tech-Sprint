@@ -1011,3 +1011,22 @@
     font-style: italic;
     margin: 1.5rem 0;
 }
+
+/* Input Date Calendar Icon Fix */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+[data-theme='light'] input[type="date"] {
+    color-scheme: light;
+}
+
+[data-theme='dark'] input[type="date"] {
+    color-scheme: dark;
+}

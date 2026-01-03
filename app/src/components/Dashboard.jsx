@@ -2525,8 +2525,7 @@ const Dashboard = ({
                                         border: '1px solid var(--border-color)',
                                         fontSize: '1rem',
                                         background: 'var(--bg-secondary)',
-                                        color: 'var(--text-primary)',
-                                        colorScheme: 'light dark'
+                                        color: 'var(--text-primary)'
                                     }}
                                 />
                             </div>
